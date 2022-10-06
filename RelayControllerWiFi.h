@@ -80,7 +80,7 @@ void readSerialData( )
 		while (nodemcu.available() > 0) 
 		{
 			content = nodemcu.readString( );
-			Serial.println("Received serial data");
+			//Serial.println("Received serial data");
 			Serial.println( content );
 			DynamicJsonDocument doc(2048);
 			deserializeJson(doc, content);
@@ -121,65 +121,65 @@ void readSerialData( )
 
 void setup()  
 {
-  pinMode(WIFI_LED_PIN, OUTPUT);
-  pinMode(MQTT_LED_PIN, OUTPUT);
-  digitalWrite(WIFI_LED_PIN, LOW);
-  digitalWrite(MQTT_LED_PIN, LOW);
-  // Serial
-  Serial.begin(9600);
-  delay(1000);
-  //while ( !Serial ){ ; }         // wait for serial port to connect. Needed for native USB port only
-  // Serial2
-  nodemcu.begin(BAUD_RATE);
-  Serial.println("Serial started ");
-  sendSerialData("info","Connecting to WiFi","");
-  // Connect to Wi-Fi
-  network.connect();
-  digitalWrite(WIFI_LED_PIN, HIGH);
-  sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
-  delay(2000);
-  sendSerialData("info", "Connecting to mqtt", "");
-  if(mqtt.connect(mqtt_username, mqtt_password))
-  {
-    sendSerialData("info", "Connected to mqtt", "");
-    // Subscribe to mqtt messages
-    mqttSubscribe(roomID);
-    sendSerialData("info", "Subscribed to mqtt", "");
-    digitalWrite(MQTT_LED_PIN, HIGH);
-    mqttConnected = true;
-  }
+	pinMode(WIFI_LED_PIN, OUTPUT);
+	pinMode(MQTT_LED_PIN, OUTPUT);
+	digitalWrite(WIFI_LED_PIN, LOW);
+	digitalWrite(MQTT_LED_PIN, LOW);
+	// Serial
+	Serial.begin(9600);
+	delay(1000);
+	//while ( !Serial ){ ; }         // wait for serial port to connect. Needed for native USB port only
+	// Serial2
+	nodemcu.begin(BAUD_RATE);
+	Serial.println("Serial started ");
+	sendSerialData("info","Connecting to WiFi","");
+	// Connect to Wi-Fi
+	network.connect();
+	digitalWrite(WIFI_LED_PIN, HIGH);
+	sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
+	delay(2000);
+	sendSerialData("info", "Connecting to mqtt", "");
+	if(mqtt.connect(mqtt_username, mqtt_password))
+	{
+		sendSerialData("info", "Connected to mqtt", "");
+		// Subscribe to mqtt messages
+		mqttSubscribe(roomID);
+		sendSerialData("info", "Subscribed to mqtt", "");
+		digitalWrite(MQTT_LED_PIN, HIGH);
+		mqttConnected = true;
+	}
 }
 
 void loop() 
 {
-  // check if we are connected to WiFi
-  if(network.status( ) != WL_CONNECTED)
-  {
-    //digitalWrite(MQTT_LED_PIN, LOW);
-    //sendSerialData("info","Connecting to WiFi","");
-    // Check wifi status
-    network.check();
-    //digitalWrite(MQTT_LED_PIN, HIGH);
-    //sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
-  }
-  if(!mqtt.isConnected())
-  {
-    mqttConnected = false;
-    digitalWrite(MQTT_LED_PIN, LOW);
-    sendSerialData("info", "Connecting to mqtt", "");
-    // Reconnected to mqtt server
-    if(mqtt.connect( mqtt_username, mqtt_password))
-    {
-      sendSerialData("info", "Connected to mqtt", "");
-      // Subscribe to mqtt messages
-      mqttSubscribe(roomID);
-      sendSerialData("info", "Subscribed to mqtt", "");
-      digitalWrite(MQTT_LED_PIN, HIGH);
-      mqttConnected = true;
-    }
-  }
-  // Loop mqtt client
-  mqtt.loop();
-  // Read incoming msgs from Serial2
-  readSerialData( );
+	// check if we are connected to WiFi
+	if(network.status( ) != WL_CONNECTED)
+	{
+		//digitalWrite(MQTT_LED_PIN, LOW);
+		//sendSerialData("info","Connecting to WiFi","");
+		// Check wifi status
+		network.check();
+		//digitalWrite(MQTT_LED_PIN, HIGH);
+		//sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
+	}
+	if(!mqtt.isConnected())
+	{
+		mqttConnected = false;
+		digitalWrite(MQTT_LED_PIN, LOW);
+		sendSerialData("info", "Connecting to mqtt", "");
+		// Reconnected to mqtt server
+		if(mqtt.connect( mqtt_username, mqtt_password))
+		{
+			sendSerialData("info", "Connected to mqtt", "");
+			// Subscribe to mqtt messages
+			mqttSubscribe(roomID);
+			sendSerialData("info", "Subscribed to mqtt", "");
+			digitalWrite(MQTT_LED_PIN, HIGH);
+			mqttConnected = true;
+		}
+	}
+	// Loop mqtt client
+	mqtt.loop();
+	// Read incoming msgs from Serial2
+	readSerialData( );
 }
