@@ -10,7 +10,7 @@ String roomID = "your-system-id";
 #include "RelayController.h"
 ```
 
-## Relay Controller WiFi
+## Relay Controller WiFi Sketch
 ```
 // System ID
 String roomID = "your-system-id";
