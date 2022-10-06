@@ -26,3 +26,24 @@ const char *mqtt_password = "mqtt-password";
 
 #include "RelayControllerWiFi.h"
 ```
+
+## Air sensors sketch
+```
+// System ID
+String roomID = "your-system-id";
+String componentID = "air-sensors";
+
+// use to calibrate this sensor
+//#define CALIBRATE_MQ135 1
+
+#include "airSensors.h"
+```
+
+## Air sensors WiFi sketch
+```
+// System ID
+String roomID = "your-system-id";
+String componentID = "air-sensors";
+
+#include "esp01WiFi.h"
+```
