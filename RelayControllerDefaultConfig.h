@@ -83,13 +83,6 @@
 	bool backlightOn = 1;
 	const int backlightOnFlashAddress = updateIntervalFlashAddress + sizeof(updateIntervalFlashAddress) +1;
 
-volatile unsigned long DebounceTimer;
-volatile int ButtonPressed;
-volatile unsigned int delayTime = 200;
-volatile unsigned int delayRepeatTime = 500;
-//volatile byte state = LOW;
-unsigned long lastInterrupt;
-
 	/************ END CONFIG ******************************/
 
 #endif

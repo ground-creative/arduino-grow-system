@@ -52,14 +52,17 @@ boolean debounceButton(boolean state, const int pin)
 
 void sendSerialData(String dataType, String message, String payload)
 {
-  StaticJsonDocument<500> doc;
-  doc["type"] = dataType;
-  doc["message"] = message;
-  doc["payload"] = payload;
-  Serial.println("Sending serial data: ");
-  serializeJson(doc, Serial);
-  serializeJson(doc, nodemcu);
-  delay(1000);
+	StaticJsonDocument<500> doc;
+	doc["type"] = dataType;
+	doc["message"] = message;
+	doc["payload"] = payload;
+	Serial.println("Sending serial data: ");
+	serializeJson(doc, Serial);
+	serializeJson(doc, nodemcu);
+	
+	nodemcu.print('\n');
+	
+	//delay(1000);
 }
 
 void changeRelayState(int value, int relayPin, int ledPin, int flashAddress)

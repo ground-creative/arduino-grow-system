@@ -89,51 +89,80 @@ void mqttSubscribe(String roomID)
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/relay-controller-restart").c_str()));
 }
 
+String getData(String data, char delimiter, int sequence)
+{
+	int stringData = 0;
+	String sectionData = "";
+	for (int i = 0; i < data.length() - 1; i++)
+	{
+		if (data[i] == delimiter)
+		{
+			stringData++;
+		}
+		else if (stringData == sequence)
+		{
+			sectionData.concat(data[i]);
+		}
+		else if (stringData > sequence)
+		{
+			return sectionData;
+			break;
+		}
+	}
+	return sectionData;
+}
+
 void readSerialData( )
 {
-	if(nodemcu.available() > 0) 
+	if (nodemcu.available() > 0) 
 	{
 		while (nodemcu.available() > 0) 
 		{
 			content = nodemcu.readString( );
-			//Serial.println("Received serial data");
-			Serial.println( content );
-			DynamicJsonDocument doc(2048);
-			deserializeJson(doc, content);
-			const char* msgType = doc["type"];
-			const char* message = doc["message"];
-			const char* payload = doc["payload"];
-			//Serial.println(msgType);
-			//Serial.println(message);
-			//Serial.println(payload);
-			if(String(msgType) == "info")
+			String ab[content.length()];
+			for (int a = 0; a < content.length() - 1; a++)
 			{
-				Serial.println("Received serial info data");
-			}
-			else if(String(msgType) == "command")
-			{
-				Serial.println("Received serial command");
-			}
-			else if(String(msgType) == "mqtt")
-			{
-				if(mqttConnected != true)
+				ab[a] = getData(content, '\n', a);
+				if (ab[a] != NULL)
 				{
-					Serial.println("Received serial mqtt data but we are not connected to the server");
+					DynamicJsonDocument doc(2048);
+					deserializeJson(doc, ab[a]);
+					const char* msgType = doc["type"];
+					const char* message = doc["message"];
+					const char* payload = doc["payload"];
+					//Serial.println(msgType);
+					//Serial.println(message);
+					//Serial.println(payload);
+					if(String(msgType) == "info")
+					{
+						Serial.println("Received serial info data");
+					}
+					else if(String(msgType) == "command")
+					{
+						Serial.println("Received serial command");
+					}
+					else if(String(msgType) == "mqtt")
+					{
+						if(mqttConnected != true)
+						{
+							Serial.println("Received serial mqtt data but we are not connected to the server");
+						}
+						else
+						{
+							Serial.println("Received serial mqtt data");
+							mqtt.publish(const_cast<char*>(message),const_cast<char*>(payload));
+						}
+					}
+					else
+					{
+						Serial.println("Received serial uncaught data");
+					}
+					Serial.println(ab[a]);
 				}
-				else
-				{
-					Serial.println("Received serial mqtt data");
-					mqtt.publish(const_cast<char*>(message),const_cast<char*>(payload));
-				}
-				}
-				else
-				{
-					Serial.println("Received serial uncaught data");
-				}
-				Serial.println(content);
 			}
 		} 
 	}
+}
 
 void setup()  
 {
