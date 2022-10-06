@@ -35,7 +35,6 @@
 	#define VOLTAGE_RESOLUTION 5
 	#define ADC_BIT_RESOLUTION 10
 	#define RATIO_MQ135_CLEAN_AIR 3.6//RS / R0 = 3.6 ppm  
-	//#define CALIBRATION_BUTTON 13 //Pin to calibrate your sensor
 	
 	//#define CALIBRATE_MQ135 1
 

@@ -6,8 +6,10 @@
 #include "SoftwareSerial.h"
 #include <EEPROM.h>
 
-String content , mqttClientID;
+String content , componentID, mqttClientID;
 bool mqttConnected = false;
+
+String defaultComponentID = "wifi-chip";
 
 SoftwareSerial nodemcu(RXD2, TXD2);
 NetTools::WIFI network(ssid, password);
@@ -18,6 +20,8 @@ void sendSerialData(const String& dataType, const String& message, const String&
 	doc["t"] = dataType;
 	doc["m"] = message;
 	doc["p"] = payload;
+	Serial.println();
+	Serial.println("Sending serial data");
 	serializeJson(doc, Serial);
 	Serial.println("");
 	serializeJson(doc, nodemcu);
@@ -36,34 +40,49 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	}
 	if((char)payload[0] == '1' || (char)payload[0] == '0')
 	{
+		Serial.println("");
 		Serial.println("Sending serial command");
 		if ( String(topic) == roomID + "/air-sensors-restart" || 
-				String(topic) == roomID + "/relay-controller-restart" )
+				String(topic) == roomID + "/main-controller-restart" )
 		{
 			topic = "restart";
 		}
 		else if ( String(topic) == roomID + "/air-sensors-display-backlight"  || 
-				String(topic) == roomID + "/relay-controller-display-backlight" )
+				String(topic) == roomID + "/main-controller-display-backlight" )
 		{
 			topic = "display-backlight";
 		}
-		sendSerialData("command", topic, String((char)payload[0]));
+		else if ( String(topic) == roomID + "/config-component-id")
+		{
+			topic = "config-component-id";
+		}
+		else if ( String(topic) == roomID + "/" + componentID + "/calibrate-mq135")
+		{
+			topic = "calibrate-mq135";
+		}
+		sendSerialData("c", topic, String((char)payload[0]));
 		delay(300);
 	}
 	else
 	{
+		Serial.println("");
 		Serial.println("Sending serial json data");
 		StaticJsonDocument<256> doc;
 		deserializeJson(doc, (const byte*)payload, length);
 		char buffer[256];
 		serializeJson(doc, buffer);
-		sendSerialData("json", topic, String(buffer));
-		delay(300);
-		/*if(String( topic ) == roomID + "/relay-controller-restart")
+		if ( String(topic) == roomID + "/air-sensors" )
 		{
-			delay(1000);
-			ESP.restart();
-		}*/
+			Serial.println(buffer);
+			topic = "air";
+		}
+		if ( String(topic) == roomID + "/water-level" )
+		{
+			Serial.println(buffer);
+			topic = "wl";
+		}
+		sendSerialData("j", topic, String(buffer));
+		delay(300);
 	}
 }
 
@@ -72,12 +91,16 @@ NetTools::MQTT mqtt(mqtt_server, mqtt_callback);
 void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/config-component-id").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	if (componentID == "air-sensors")
 	{
-		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
-		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
+		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
+		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
+		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/calibrate-mq135").c_str()));
 	}
-	else if (componentID == "relay-controller")
+	else if (componentID == "main-controller")
 	{
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/water-tester").c_str()));
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/water-level").c_str()));
@@ -89,10 +112,10 @@ void mqttSubscribe(const String& roomID)
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/lights").c_str()));
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/fan").c_str()));
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/airco").c_str()));
-		mqtt.subscribe(const_cast<char*>(String(roomID + "/air-values").c_str()));
+		mqtt.subscribe(const_cast<char*>(String(roomID + "/air-sensors").c_str()));
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-update-interval").c_str()));
-		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
-		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
+		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
+		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	}
 }
 
@@ -117,6 +140,28 @@ String getData(const String& data, char delimiter, int sequence)
 		}
 	}
 	return sectionData;
+}
+
+String readConfig(int addr)
+{
+	String result = "";
+	uint8_t count = 0;
+	while (count < 31) 
+	{
+		//yield();
+		char byte = EEPROM.read(addr + count);
+		if (byte == '\0') 
+		{
+			break;
+		}
+		else 
+		{
+			result.concat(byte);
+		}
+		count++;
+	}
+	result = result.substring(0, (result.length()));
+	return result;
 }
 
 void writeConfig(int address, String word) 
@@ -150,19 +195,19 @@ void readSerialData( )
 					const char* message = doc["m"];
 					const char* payload = doc["p"];
 					Serial.println("");
-					if(String(msgType) == "info")
+					if(String(msgType) == "i")
 					{
 						Serial.println("Received serial info data");
 					}
-					else if (String(msgType) == "command")
+					else if (String(msgType) == "c")
 					{
 						Serial.println("Received serial command");
-						if(String(message) == "wifi-restart")
+						if(String(message) == "restart")
 						{
 							ESP.restart();
 						}
 					}
-					else if (String(msgType) == "mqtt")
+					else if (String(msgType) == "m")
 					{
 						if (mqttConnected != true)
 						{
@@ -185,17 +230,17 @@ void readSerialData( )
 							}
 						}
 					}
-					else if (String(msgType) == "json")
+					else if (String(msgType) == "j")
 					{
 						Serial.println("Received serial json data");
 						StaticJsonDocument<200> doc1;
 						deserializeJson(doc1, doc["p"]);
-						if (String(message) == "config")
+						if (String(message) == "c")
 						{        
-							roomID = String( doc1["roomID"] );
 							componentID = String( doc1["componentID"] );
-							writeConfig(roomIDFlashAddress, roomID);
 							writeConfig(componentIDFlashAddress, componentID);
+							delay(1000);
+							ESP.restart();
 						}
 					}
 					else
@@ -209,54 +254,51 @@ void readSerialData( )
 	}
 }
 
-String readConfig(int addr)
-{
-	String result = "";
-	uint8_t count = 0;
-	while (count < 21) 
-	{
-		//yield();
-		char byte = EEPROM.read(addr + count);
-		if (byte == '\0') 
-		{
-			break;
-		}
-		else 
-		{
-			result.concat(byte);
-		}
-		count++;
-	}
-	result = result.substring(0, (result.length()));
-	return result;
-}
-
 void setup()  
 {
-	if (RXD2 != 3)
-	{
+	#ifdef DEBUG_SERIAL
 		Serial.begin(9600);
-	}
+	#else
+		pinMode(WIFI_LED_PIN, OUTPUT);
+		digitalWrite(WIFI_LED_PIN, LOW);
+		pinMode(MQTT_LED_PIN, OUTPUT);
+		digitalWrite(MQTT_LED_PIN, LOW);
+	#endif
 	nodemcu.begin(BAUD_RATE);
 	delay(1000);
-	//EEPROM.begin(512);
-	//roomID = readConfig(roomIDFlashAddress);
-	//componentID = readConfig(componentIDFlashAddress);
-	mqttClientID = roomID + "-" + componentID;
-	//mqttTopic = roomID + "/" + componentID;
-	Serial.println("Wifi chip started with config " + roomID +  ":" + componentID);
-	sendSerialData("info", "Connecting to WiFi", "");
-	network.connect();
-	//digitalWrite(WIFI_LED_PIN, HIGH);
-	sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
-	delay(2000);
-	sendSerialData("info", "Connecting to mqtt", "");
-	if (mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
+	Serial.println("Starting...");
+	EEPROM.begin(512);
+	componentID = readConfig(componentIDFlashAddress);
+	if (!componentID || componentID.length() == 0 || componentID.length() == 31)
 	{
-		sendSerialData("info", "Connected to mqtt", "");
+		Serial.println( "Please call service config-component-id" );
+		sendSerialData("i", "Please call service config-component-id", "");
+		componentID = defaultComponentID;
+		delay(5000);
+	}
+	else
+	{
+		sendSerialData("i", "cid:" + componentID, "");
+		delay(2000);
+	}
+	mqttClientID = roomID + "-" + componentID;
+	Serial.println("Wifi chip started with config " + roomID +  ":" + componentID);
+	sendSerialData("i", "Connecting to WiFi", "");
+	network.connect();
+	#ifndef DEBUG_SERIAL
+		digitalWrite(WIFI_LED_PIN, HIGH);
+	#endif
+	sendSerialData("i", "Connected to WiFi", network.localAddress().toString());
+	delay(2000);
+	sendSerialData("i", "Connecting to mqtt", "");
+	if ( mqtt.connect(mqttClientID, mqtt_username, mqtt_password) )
+	{
+		sendSerialData("i", "Connected to mqtt", "");
 		mqttSubscribe(roomID);
-		sendSerialData("info", "Subscribed to mqtt", "");
-		//digitalWrite(MQTT_LED_PIN, HIGH);
+		sendSerialData("i", "Subscribed to mqtt", "");
+		#ifndef DEBUG_SERIAL
+			digitalWrite(MQTT_LED_PIN, HIGH);
+		#endif
 		mqttConnected = true;
 	}
 }
@@ -270,14 +312,18 @@ void loop()
 	if (!mqtt.isConnected())
 	{
 		mqttConnected = false;
-		//digitalWrite(MQTT_LED_PIN, LOW);
-		sendSerialData("info", "Connecting to mqtt", "");
+		#ifndef DEBUG_SERIAL
+			digitalWrite(MQTT_LED_PIN, LOW);
+		#endif
+		sendSerialData("i", "Connecting to mqtt", "");
 		if(mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
 		{
-			sendSerialData("info", "Connected to mqtt", "");
+			sendSerialData("i", "Connected to mqtt", "");
 			mqttSubscribe(roomID);
-			sendSerialData("info", "Subscribed to mqtt", "");
-			//digitalWrite(MQTT_LED_PIN, HIGH);
+			sendSerialData("i", "Subscribed to mqtt", "");
+			#ifndef DEBUG_SERIAL
+				digitalWrite(MQTT_LED_PIN, HIGH);
+			#endif
 			mqttConnected = true;
 		}
 	}

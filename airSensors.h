@@ -19,6 +19,7 @@ SoftwareSerial nodemcu(RXD2, TXD2);
 SSD1306AsciiAvrI2c oled;
 
 float outTemp = 0.0, inTemp = 0.0, inHum = 0.0, inCo2 = 0, RO = 0;
+String componentID = "air-sensors";
 const String wifiIP = "";
 unsigned long previousMillis = 0; 
 unsigned int outTempSensorCountRetries = 0;
@@ -29,6 +30,39 @@ void softwareReset(unsigned long delayMillis)
 	uint32_t resetTime = millis() + delayMillis;
 	while (resetTime > millis()) { }
 	asm volatile ( "jmp 0");  
+}
+
+void calibrateMQ135Sensor()
+{
+	/*****************************  MQ CAlibration ********************************************/ 
+	// Explanation: 
+	// In this routine the sensor will measure the resistance of the sensor supposedly before being pre-heated
+	// and on clean air (Calibration conditions), setting up R0 value.
+	// We recomend executing this routine only on setup in laboratory conditions.
+	// This routine does not need to be executed on each restart, you can load your R0 value from eeprom.
+	// Acknowledgements: https://jayconsystems.com/blog/understanding-a-gas-sensor
+	Serial.print("Calibrating please wait.");
+	float calcR0 = 0;
+	for(int i = 1; i<=10; i ++)
+	{
+		MQ135.update(); // Update data, the arduino will read the voltage from the analog pin
+		calcR0 += MQ135.calibrate(RATIO_MQ135_CLEAN_AIR);
+		Serial.print(".");
+	}
+	EEPROM.put(mq135ROFlashAddress, calcR0/10);
+	Serial.print("Saved R0 value: ");
+	Serial.print(calcR0/10);
+	Serial.println("  done!.");
+	oled.clear();
+	oled.setRow(1);
+	oled.setCursor(0, 0);
+	oled.set1X();
+	oled.print("cal MQ135 R0 ");
+	oled.setRow(2);
+	oled.setCursor(10, 10);
+	oled.set2X();
+	oled.print(calcR0/10);
+	delay(1000);
 }
 
 void sendSerialData(String dataType, String message, String payload)
@@ -59,15 +93,20 @@ void readSerialData()
 		const char* message = doc["m"];
 		const char* payload = doc["p"];
 		Serial.println("");
-		if(String(msgType) == "info")
+		if(String(msgType) == "i")
 		{
 			Serial.println("Received serial info data");
 			if (String(message) == "Connected to WiFi")
 			{
 				wifiIP = payload;
 			}
+			oled.clear();
+			oled.setRow(1);
+			oled.setCursor(0, 0);
+			oled.set1X();
+			oled.print(message);
 		}
-		else if (String(msgType) == "command")
+		else if (String(msgType) == "c")
 		{
 			Serial.println("Received serial command");
 			if (String(message) == "restart")
@@ -86,6 +125,22 @@ void readSerialData()
 					oled.clear();
 				}
 				EEPROM.write(oledFlashAddress, oledOn);
+			}
+			else if (String( message ) == "config-component-id")
+			{
+				Serial.println("Sending config data");
+				oled.clear();
+				oled.setRow(1);
+				oled.setCursor(0, 0);
+				oled.set1X();
+				oled.print("Sending config data to wifi chip");
+				sendSerialData("j", "c", "{\"componentID\":\"air-sensors\"}");
+			}
+			else if (String( message ) == "calibrate-mq135")
+			{
+				calibrateMQ135Sensor();
+				delay(1000);
+				softwareReset(60); 
 			}
 		}
 		else
@@ -154,26 +209,6 @@ void updateDHTValues()
 		Serial.print(inHum);
 		Serial.println();
 	}
-}
-void calibrateMQ135Sensor()
-{
-	/*****************************  MQ CAlibration ********************************************/ 
-	// Explanation: 
-	// In this routine the sensor will measure the resistance of the sensor supposedly before being pre-heated
-	// and on clean air (Calibration conditions), setting up R0 value.
-	// We recomend executing this routine only on setup in laboratory conditions.
-	// This routine does not need to be executed on each restart, you can load your R0 value from eeprom.
-	// Acknowledgements: https://jayconsystems.com/blog/understanding-a-gas-sensor
-	Serial.print("Calibrating please wait.");
-	float calcR0 = 0;
-	for(int i = 1; i<=10; i ++)
-	{
-		MQ135.update(); // Update data, the arduino will read the voltage from the analog pin
-		calcR0 += MQ135.calibrate(RATIO_MQ135_CLEAN_AIR);
-		Serial.print(".");
-	}
-	EEPROM.put(mq135ROFlashAddress, calcR0/10);
-	Serial.println("  done!.");
 }
 
 void updateCo2Values()
@@ -284,17 +319,7 @@ void setup()
 	nodemcu.begin(BAUD_RATE);
 	delay(1000);
 	Serial.println("Component started with config " + roomID +  ":" + componentID);
-	/*String roomIDFlashValue = readConfig(roomIDFlashAddress);
-	String componentIDFlashValue = readConfig(componentIDFlashAddress);
-	if (roomIDFlashValue != roomID || componentIDFlashValue != componentID)
-	{
-		Serial.println("Sending config data to wifi chip");
-		sendSerialData("json", "config", "{\"roomID\":\"kroom\",\"componentID\":\"air-sensors\"}");
-		writeConfig(roomIDFlashAddress, roomID);
-		writeConfig(componentIDFlashAddress, componentID);
-		delay(5000);
-	}*/
-	sendSerialData("command", "wifi-restart", "1");
+	sendSerialData("c", "restart", "1");
 	#if RST_PIN >= 0
 		oled.begin(&Adafruit128x64, I2C_ADDRESS, RST_PIN);
 	#else 
@@ -303,6 +328,10 @@ void setup()
 	oled.setFont(Adafruit5x7);
 	oled.clear();
 	oledOn = EEPROM.read( oledFlashAddress );
+	oled.setRow(1);
+	oled.setCursor(10, 0);
+	oled.print(roomID);
+	oled.set1X();
 	oled.setRow(3);
 	oled.setCursor(10, 10);
 	oled.set2X();
@@ -344,7 +373,7 @@ void loop()
 		updateCo2Values();
 		updateDisplayValues();
 		String data = "{\"o\":\"" + String(outTemp, 1) + "\",\"i\":\"" + String(inTemp, 1) + "\",\"h\":\"" + String(inHum, 1) + "\",\"c\":\"" + String(inCo2, 0) + "\"}";
-		sendSerialData("mqtt", "air" , data);
+		sendSerialData("m", "air" , data);
 	}
 	readSerialData( );
 }
