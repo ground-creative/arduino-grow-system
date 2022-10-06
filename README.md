@@ -1,6 +1,8 @@
 # arduino-grow-system
 
-## Relay Controller
+Automated grow system arudino ide sketches
+
+## Relay Controller Sketch
 ```
 // System ID
 String roomID = "your-system-id";
