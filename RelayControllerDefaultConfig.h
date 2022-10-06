@@ -1,5 +1,5 @@
-#ifndef _RELAY_CONTROLLER_DEFAULT_CONFIG_
-	#define _RELAY_CONTROLLER_DEFAULT_CONFIG_	
+#ifndef RELAY_CONTROLLER_CONFIG_
+	#define RELAY_CONTROLLER_CONFIG	
 
 	/********* START CONFIG *******************************/
 
@@ -67,6 +67,12 @@
 
 	int aircoRelayState = HIGH;
 	const int aircoFlashAddress = 7;
+	
+	// Reset button
+	#define RESET_PIN  3
+	int resetButtonState = HIGH; 
+	long lastDebounceTime = 0;
+	long debounceDelay = 200;
 
 	// Wifi chip tx and rx
 	#define RXD2 16
@@ -76,11 +82,11 @@
 	#define BAUD_RATE 4800
 
 	// Update values on display interval in milliseconds
-	unsigned long updateInterval = 10000;
+	unsigned long updateInterval;
 	const int updateIntervalFlashAddress = 8;
 	
 	// Display backlight status
-	bool backlightOn = 1;
+	bool backlightOn;
 	const int backlightOnFlashAddress = updateIntervalFlashAddress + sizeof(updateIntervalFlashAddress) +1;
 
 	/************ END CONFIG ******************************/

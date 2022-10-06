@@ -1,4 +1,4 @@
-#ifndef _RELAY_CONTROLLER_DEFAULT_CONFIG_
+#ifndef RELAY_CONTROLLER_CONFIG
 	#include "RelayControllerDefaultConfig.h"
 #endif
 
@@ -53,9 +53,9 @@ boolean debounceButton(boolean state, const int pin)
 void sendSerialData(String dataType, String message, String payload)
 {
 	StaticJsonDocument<500> doc;
-	doc["type"] = dataType;
-	doc["message"] = message;
-	doc["payload"] = payload;
+	doc["t"] = dataType;
+	doc["m"] = message;
+	doc["p"] = payload;
 	Serial.println("Sending serial data: ");
 	serializeJson(doc, Serial);
 	serializeJson(doc, nodemcu);
@@ -64,7 +64,7 @@ void sendSerialData(String dataType, String message, String payload)
 
 void changeRelayState(int value, int relayPin, int ledPin, int flashAddress)
 {
-	if(value)d
+	if(value)
 	{
 		Serial.println("Switching on relay");
 		pcf8575.digitalWrite(relayPin, LOW);
@@ -87,6 +87,7 @@ int changeRelayStateManually(int curBtnState, int &relayState, int btnPin, int r
 	curBtnState = debounceButton(relayState, btnPin);
 	if(lastButtonState == HIGH && curBtnState == LOW) 
 	{
+		Serial.println();
 		Serial.print("The button is pressed ");
 		Serial.println(mqttTopic);
 		relayState = !relayState;
@@ -146,9 +147,9 @@ void readSerialData()
 		}
 		StaticJsonDocument<500> doc;
 		deserializeJson(doc, content);
-		const char* msgType = doc["type"];
-		const char* message = doc["message"];
-		const char* payload = doc["payload"];
+		const char* msgType = doc["t"];
+		const char* message = doc["m"];
+		const char* payload = doc["p"];
 		Serial.println("");
 		if(String(msgType) == "info")
 		{
@@ -168,7 +169,7 @@ void readSerialData()
 		{
 			Serial.println("Received serial json data");
 			StaticJsonDocument<500> doc1;
-			deserializeJson(doc1, doc["payload"]);
+			deserializeJson(doc1, doc["p"]);
 			if(String(message ) == roomID + "/water-level")
 			{
 				water_level = doc1["level"];
@@ -186,10 +187,12 @@ void readSerialData()
 				EEPROM.commit();
 				if (backlightOn)
 				{
+					Serial.println("Turning on lcd");
 					lcd.backlight();
 				}
 				else
 				{
+					Serial.println("Turning off lcd");
 					lcd.noBacklight();
 				}
 			}
@@ -242,6 +245,34 @@ void updateDisplayValues()
 	}
 }
 
+void lcdBacklightBtn()
+{
+	resetButtonState = digitalRead(RESET_PIN);
+	if ( (millis() - lastDebounceTime) > debounceDelay ) 
+	{
+		if ( (resetButtonState == LOW) && (backlightOn) ) 
+		{
+			Serial.println("Turning off lcd");
+			backlightOn = 0;
+			lcd.noBacklight();
+			lastDebounceTime = millis();
+			EEPROM.write(backlightOnFlashAddress, backlightOn);
+			EEPROM.commit();
+			sendSerialData("mqtt", "m/" + roomID + "/backlight-btn", String(backlightOn));
+		}
+		else if ( (resetButtonState == LOW) ) 
+		{
+			Serial.println("Turning on lcd");
+			backlightOn = 1;
+			lcd.backlight();
+			lastDebounceTime = millis();
+			EEPROM.write(backlightOnFlashAddress, backlightOn);
+			EEPROM.commit();
+			sendSerialData("mqtt", "m/" + roomID + "/backlight-btn", String(backlightOn));
+		}
+	}
+}
+
 void setup() 
 {
 	// Serial
@@ -283,6 +314,8 @@ void setup()
 	pcf8575.pinMode( AIRCO_RELAY_PIN, OUTPUT );
 	pinMode( AIRCO_BTN_PIN, INPUT_PULLUP );
 	pinMode( AIRCO_LED_PIN, OUTPUT );
+	// Set pin mode reset button
+	pinMode(RESET_PIN, INPUT_PULLUP );
 	// IO Extender
 	pcf8575.begin();
 	// EEPROM
@@ -326,8 +359,12 @@ void setup()
 	lcd.setCursor (0, 0); 
 	lcd.print("Starting"); 
 	updateInterval = EEPROM.readFloat(updateIntervalFlashAddress);
+	if (!updateInterval)
+	{
+		updateInterval = 10000;
+	}
 	backlightOn = EEPROM.read(backlightOnFlashAddress);
-	if(backlightOn)
+	if (backlightOn)
 	{
 		lcd.backlight();
 	}
@@ -339,14 +376,15 @@ void setup()
 
 void loop() 
 {
-	solValveBtnState = changeRelayStateManually( solValveBtnState, solValveRelayState, SOLENOID_VALVE_BTN_PIN, SOLENOID_VALVE_RELAY_PIN, SOLENOID_VALVE_LED_PIN, solValveFlashAddress, "device-manual-action/" + roomID + "/solenoid-valve-btn-pressed" );
-	drainPumpBtnState = changeRelayStateManually( drainPumpBtnState, drainPumpRelayState, DRAIN_PUMP_BTN_PIN, DRAIN_PUMP_RELAY_PIN, DRAIN_PUMP_LED_PIN, drainPumpFlashAddress,"device-manual-action/" + roomID + "/drain-pump-btn-pressed" );
-	mixingPumpBtnState = changeRelayStateManually( mixingPumpBtnState, mixingPumpRelayState, MIXING_PUMP_BTN_PIN, MIXING_PUMP_RELAY_PIN, MIXING_PUMP_LED_PIN, mixingPumpFlashAddress, "device-manual-action/" + roomID + "/mixing-pump-btn-pressed" );
-	extractorBtnState = changeRelayStateManually( extractorBtnState, extractorRelayState, EXTRACTOR_BTN_PIN, EXTRACTOR_RELAY_PIN, EXTRACTOR_LED_PIN, extractorFlashAddress, "device-manual-action/" + roomID + "/extractor-btn-pressed" );
-	lightsBtnState = changeRelayStateManually( lightsBtnState, lightsRelayState, LIGHTS_BTN_PIN, LIGHTS_RELAY_PIN, LIGHTS_LED_PIN, lightsFlashAddress, "device-manual-action/" + roomID + "/lights-btn-pressed" );
-	feedingPumpBtnState = changeRelayStateManually( feedingPumpBtnState, feedingPumpRelayState, FEEDING_PUMP_BTN_PIN, FEEDING_PUMP_RELAY_PIN, FEEDING_PUMP_LED_PIN, feedingPumpFlashAddress, "device-manual-action/" + roomID + "/feeding-pump-btn-pressed" );
-	fanBtnState = changeRelayStateManually( fanBtnState, fanRelayState, FAN_BTN_PIN, FAN_RELAY_PIN, FAN_LED_PIN, fanFlashAddress, "device-manual-action/" + roomID + "/fan-btn-pressed" );
-	aircoBtnState = changeRelayStateManually( aircoBtnState, aircoRelayState, AIRCO_BTN_PIN, AIRCO_RELAY_PIN, AIRCO_LED_PIN, aircoFlashAddress, "device-manual-action/" + roomID + "/airco-btn-pressed" );
+	solValveBtnState = changeRelayStateManually( solValveBtnState, solValveRelayState, SOLENOID_VALVE_BTN_PIN, SOLENOID_VALVE_RELAY_PIN, SOLENOID_VALVE_LED_PIN, solValveFlashAddress, "m/" + roomID + "/sv-btn" );
+	drainPumpBtnState = changeRelayStateManually( drainPumpBtnState, drainPumpRelayState, DRAIN_PUMP_BTN_PIN, DRAIN_PUMP_RELAY_PIN, DRAIN_PUMP_LED_PIN, drainPumpFlashAddress,"m/" + roomID + "/dp-btn" );
+	mixingPumpBtnState = changeRelayStateManually( mixingPumpBtnState, mixingPumpRelayState, MIXING_PUMP_BTN_PIN, MIXING_PUMP_RELAY_PIN, MIXING_PUMP_LED_PIN, mixingPumpFlashAddress, "m/" + roomID + "/mp-btn" );
+	extractorBtnState = changeRelayStateManually( extractorBtnState, extractorRelayState, EXTRACTOR_BTN_PIN, EXTRACTOR_RELAY_PIN, EXTRACTOR_LED_PIN, extractorFlashAddress, "m/" + roomID + "/ex-btn" );
+	lightsBtnState = changeRelayStateManually( lightsBtnState, lightsRelayState, LIGHTS_BTN_PIN, LIGHTS_RELAY_PIN, LIGHTS_LED_PIN, lightsFlashAddress, "m/" + roomID + "/li-btn" );
+	feedingPumpBtnState = changeRelayStateManually( feedingPumpBtnState, feedingPumpRelayState, FEEDING_PUMP_BTN_PIN, FEEDING_PUMP_RELAY_PIN, FEEDING_PUMP_LED_PIN, feedingPumpFlashAddress, "m/" + roomID + "/fp-btn" );
+	fanBtnState = changeRelayStateManually( fanBtnState, fanRelayState, FAN_BTN_PIN, FAN_RELAY_PIN, FAN_LED_PIN, fanFlashAddress, "m/" + roomID + "/fa-btn" );
+	aircoBtnState = changeRelayStateManually( aircoBtnState, aircoRelayState, AIRCO_BTN_PIN, AIRCO_RELAY_PIN, AIRCO_LED_PIN, aircoFlashAddress, "m/" + roomID + "/ai-btn" );
+	lcdBacklightBtn();
 	readSerialData( );
 	updateDisplayValues();
 }

@@ -1,4 +1,4 @@
-#ifndef _RELAY_CONTROLLER_WIFI_DEFAULT_CONFIG_
+#ifndef RELAY_CONTROLLER_WIFI_CONFIG
 	#include "RelayControllerWiFiDefaultConfig.h"
 #endif
 
@@ -22,10 +22,10 @@ SoftwareSerial nodemcu(RXD2, TXD2); //RX, TX
 
 void sendSerialData(String dataType, String message, String payload)
 {
-	DynamicJsonDocument doc(2048);
-	doc["type"] = dataType;
-	doc["message"] = message;
-	doc["payload"] = payload;
+	DynamicJsonDocument doc(256);
+	doc["t"] = dataType;
+	doc["m"] = message;
+	doc["p"] = payload;
 	serializeJson(doc, Serial);
 	Serial.println("");
 	serializeJson(doc, nodemcu);
@@ -127,27 +127,28 @@ void readSerialData( )
 				{
 					DynamicJsonDocument doc(2048);
 					deserializeJson(doc, ab[a]);
-					const char* msgType = doc["type"];
-					const char* message = doc["message"];
-					const char* payload = doc["payload"];
+					const char* msgType = doc["t"];
+					const char* message = doc["m"];
+					const char* payload = doc["p"];
+					Serial.println("");
 					if(String(msgType) == "info")
 					{
 						Serial.println("Received serial info data");
 					}
-					else if(String(msgType) == "command")
+					else if (String(msgType) == "command")
 					{
 						Serial.println("Received serial command");
 					}
-					else if(String(msgType) == "mqtt")
+					else if (String(msgType) == "mqtt")
 					{
-						if(mqttConnected != true)
+						if (mqttConnected != true)
 						{
 							Serial.println("Received serial mqtt data but we are not connected to the server");
 						}
 						else
 						{
 							Serial.println("Received serial mqtt data");
-							mqtt.publish(const_cast<char*>(message),const_cast<char*>(payload));
+							mqtt.publish(const_cast<char*>(message), const_cast<char*>(payload));
 						}
 					}
 					else
@@ -163,21 +164,32 @@ void readSerialData( )
 
 void setup()  
 {
-	pinMode(WIFI_LED_PIN, OUTPUT);
-	pinMode(MQTT_LED_PIN, OUTPUT);
-	digitalWrite(WIFI_LED_PIN, LOW);
-	digitalWrite(MQTT_LED_PIN, LOW);
-	// Serial
-	Serial.begin(9600);
-	delay(1000);
-	//while ( !Serial ){ ; }         // wait for serial port to connect. Needed for native USB port only
+	//if (!START_SERIAL_DEBUG)
+	//{
+		//pinMode(WIFI_LED_PIN, OUTPUT);
+		//pinMode(MQTT_LED_PIN, OUTPUT);
+		//digitalWrite(WIFI_LED_PIN, LOW);
+		//digitalWrite(MQTT_LED_PIN, LOW);
+	
+	//}
+	//else
+	//{
+		// Serial
+		//Serial.begin(9600, SERIAL_8N1, SERIAL_TX_ONLY);
+		//Serial.begin(9600);
+		delay(1000);
+		//while ( !Serial ){ ; }         // wait for serial port to connect. Needed for native USB port only
+	//}
 	// Serial2
 	nodemcu.begin(BAUD_RATE);
 	Serial.println("Serial started ");
 	sendSerialData("info","Connecting to WiFi","");
 	// Connect to Wi-Fi
 	network.connect();
-	digitalWrite(WIFI_LED_PIN, HIGH);
+	//if (!START_SERIAL_DEBUG)
+	//{
+		//digitalWrite(WIFI_LED_PIN, HIGH);
+	//}
 	sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
 	delay(2000);
 	sendSerialData("info", "Connecting to mqtt", "");
@@ -187,7 +199,10 @@ void setup()
 		// Subscribe to mqtt messages
 		mqttSubscribe(roomID);
 		sendSerialData("info", "Subscribed to mqtt", "");
-		digitalWrite(MQTT_LED_PIN, HIGH);
+		//if (!START_SERIAL_DEBUG)
+		//{
+			//digitalWrite(MQTT_LED_PIN, HIGH);
+		//}
 		mqttConnected = true;
 	}
 }
@@ -197,26 +212,27 @@ void loop()
 	// check if we are connected to WiFi
 	if(network.status( ) != WL_CONNECTED)
 	{
-		//digitalWrite(MQTT_LED_PIN, LOW);
-		//sendSerialData("info","Connecting to WiFi","");
-		// Check wifi status
 		network.check();
-		//digitalWrite(MQTT_LED_PIN, HIGH);
-		//sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
 	}
 	if(!mqtt.isConnected())
 	{
 		mqttConnected = false;
-		digitalWrite(MQTT_LED_PIN, LOW);
+		//if (!START_SERIAL_DEBUG)
+		//{
+			//digitalWrite(MQTT_LED_PIN, LOW);
+		//}
 		sendSerialData("info", "Connecting to mqtt", "");
 		// Reconnected to mqtt server
-		if(mqtt.connect( mqtt_username, mqtt_password))
+		if(mqtt.connect(mqtt_username, mqtt_password))
 		{
 			sendSerialData("info", "Connected to mqtt", "");
 			// Subscribe to mqtt messages
 			mqttSubscribe(roomID);
 			sendSerialData("info", "Subscribed to mqtt", "");
-			digitalWrite(MQTT_LED_PIN, HIGH);
+			//if (!START_SERIAL_DEBUG)
+			//{
+				//digitalWrite(MQTT_LED_PIN, HIGH);
+			//}
 			mqttConnected = true;
 		}
 	}
