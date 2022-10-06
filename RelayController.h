@@ -59,23 +59,18 @@ void sendSerialData(String dataType, String message, String payload)
 	Serial.println("Sending serial data: ");
 	serializeJson(doc, Serial);
 	serializeJson(doc, nodemcu);
-	
 	nodemcu.print('\n');
-	
-	//delay(1000);
 }
 
 void changeRelayState(int value, int relayPin, int ledPin, int flashAddress)
 {
-	//if (value == 49) // switch on
-	if(value)
+	if(value)d
 	{
 		Serial.println("Switching on relay");
 		pcf8575.digitalWrite(relayPin, LOW);
 		digitalWrite(ledPin, HIGH);
 		EEPROM.write(flashAddress, 0);
 	} 
-	//else  if(value == 48) // switch off 
 	else
 	{
 		Serial.println("Switching off relay");
@@ -154,9 +149,6 @@ void readSerialData()
 		const char* msgType = doc["type"];
 		const char* message = doc["message"];
 		const char* payload = doc["payload"];
-		//Serial.println(msgType);
-		//Serial.println(message);
-		//Serial.println(payload);
 		Serial.println("");
 		if(String(msgType) == "info")
 		{
@@ -357,5 +349,4 @@ void loop()
 	aircoBtnState = changeRelayStateManually( aircoBtnState, aircoRelayState, AIRCO_BTN_PIN, AIRCO_RELAY_PIN, AIRCO_LED_PIN, aircoFlashAddress, "device-manual-action/" + roomID + "/airco-btn-pressed" );
 	readSerialData( );
 	updateDisplayValues();
-	//delay(10000);
 }

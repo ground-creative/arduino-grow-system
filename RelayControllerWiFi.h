@@ -130,9 +130,6 @@ void readSerialData( )
 					const char* msgType = doc["type"];
 					const char* message = doc["message"];
 					const char* payload = doc["payload"];
-					//Serial.println(msgType);
-					//Serial.println(message);
-					//Serial.println(payload);
 					if(String(msgType) == "info")
 					{
 						Serial.println("Received serial info data");
