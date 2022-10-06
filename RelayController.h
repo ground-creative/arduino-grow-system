@@ -170,7 +170,7 @@ void readSerialData()
 			Serial.println("Received serial json data");
 			StaticJsonDocument<500> doc1;
 			deserializeJson(doc1, doc["p"]);
-			if(String(message ) == roomID + "/water-level")
+			if(String(message) == roomID + "/water-level")
 			{
 				water_level = doc1["level"];
 			}

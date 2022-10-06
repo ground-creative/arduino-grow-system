@@ -12,8 +12,8 @@
 #include "SoftwareSerial.h"
 
 // Variables
-const String mqttClientID = roomID + "-display";
-const String mqttTopic = roomID + "/display";
+//const String mqttClientID = roomID + "-display";
+//const String mqttTopic = roomID + "/display";
 String content = "";
 bool mqttConnected = false;
 
@@ -199,7 +199,7 @@ void setup()
 	{
 		sendSerialData("info", "Connected to mqtt", "");
 		// Subscribe to mqtt messages
-		mqttSubscribe(roomID);
+		//mqttSubscribe(roomID);
 		sendSerialData("info", "Subscribed to mqtt", "");
 		//if (!START_SERIAL_DEBUG)
 		//{
@@ -229,7 +229,7 @@ void loop()
 		{
 			sendSerialData("info", "Connected to mqtt", "");
 			// Subscribe to mqtt messages
-			mqttSubscribe(roomID);
+			//mqttSubscribe(roomID);
 			sendSerialData("info", "Subscribed to mqtt", "");
 			//if (!START_SERIAL_DEBUG)
 			//{
