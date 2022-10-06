@@ -2,7 +2,7 @@
 
 Automated grow system arudino ide sketches
 
-## Relay Controller Sketch
+## Relay controller sketch
 ```
 // System ID
 String roomID = "your-system-id";
@@ -10,7 +10,7 @@ String roomID = "your-system-id";
 #include "RelayController.h"
 ```
 
-## Relay Controller WiFi Sketch
+## Relay controller WiFi sketch
 ```
 // System ID
 String roomID = "your-system-id";
