@@ -25,6 +25,7 @@ void sendSerialData(String dataType, String message, String payload)
 	doc["type"] = dataType;
 	doc["message"] = message;
 	doc["payload"] = payload;
+	Serial.println("");
 	Serial.println("Sending serial data: ");
 	serializeJson(doc, Serial);
 	serializeJson(doc, nodemcu);
@@ -38,7 +39,8 @@ void mqtt_callback( char* topic, byte* payload, unsigned int length )
 	Serial.print("Message arrived [");
 	Serial.print(topic);
 	Serial.print("] ");
-	for (int i = 0; i < length; i++) 
+	int i = 0;
+	for (i; i < length; i++) 
 	{
 		Serial.print((char)payload[i]);
 	}
@@ -46,7 +48,20 @@ void mqtt_callback( char* topic, byte* payload, unsigned int length )
 	{
 		sendSerialData("command", topic, String((char)payload[0]));
 	}
-	//sendSerialData("command", topic, String((char *)payload));
+	if(String(topic) == roomID +"/water-level")
+	{
+		StaticJsonDocument<256> doc;
+		deserializeJson( doc, ( const byte* ) payload, length );
+		char buffer[256];
+		serializeJson(doc, buffer);
+		//Serial.print(String(buffer));
+		sendSerialData("json", topic, String(buffer));
+	}
+	else
+	{
+		Serial.println("Uncaught mqtt callback");
+	}
+	
 }
 
 // Wifi tools

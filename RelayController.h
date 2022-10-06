@@ -154,6 +154,9 @@ void readSerialData()
 		const char* msgType = doc["type"];
 		const char* message = doc["message"];
 		const char* payload = doc["payload"];
+		//Serial.println(msgType);
+		//Serial.println(message);
+		//Serial.println(payload);
 		if(String(msgType) == "info")
 		{
 			Serial.println("Received serial info data");
@@ -166,10 +169,17 @@ void readSerialData()
 		else if(String(msgType) == "command")
 		{
 			Serial.println("Received serial command");
-			//Serial.println(msgType);
-			//Serial.println(message);
-			//Serial.println(payload);
 			processSerialCommand(message, payload);
+		}
+		else if(String(msgType) == "json")
+		{
+			Serial.println("Received serial json data");
+			StaticJsonDocument<500> doc1;
+			deserializeJson(doc1, doc["payload"]);
+			if(String(message ) == roomID + "/water-level")
+			{
+				water_level = doc1["level"];
+			}
 		}
 		else
 		{
@@ -185,7 +195,6 @@ void setup()
 	Serial.begin(9600);
 	delay(1000);
 	//while ( !Serial ){ ; }         // wait for serial port to connect. Needed for native USB port only
-
 	// Serial2
 	nodemcu.begin(BAUD_RATE);
 	Serial.println( "Starting" );
