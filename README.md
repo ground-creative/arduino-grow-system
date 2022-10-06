@@ -45,5 +45,14 @@ String componentID = "air-sensors";
 String roomID = "your-system-id";
 String componentID = "air-sensors";
 
+// Network credentials
+const char* ssid = "wifi-ssid";
+const char* password = "wifi-password";
+
+// MQTT Broker:
+const char *mqtt_server = "mqtt-server-address";
+const char *mqtt_username = "mqtt-username";
+const char *mqtt_password = "mqtt-password";
+
 #include "esp01WiFi.h"
 ```
