@@ -39,9 +39,6 @@ int water_level = 0, solValveBtnState, drainPumpBtnState, mixingPumpBtnState, ex
 float t = 0.0, h = 0.0, dtemperature = 0.0;
 unsigned long previousMillis = 0;
 
-unsigned long button_time = 0;  
-unsigned long last_button_time = 0;
-
 boolean debounceButton(boolean state, const int pin)
 {
 	boolean stateNow = digitalRead(pin);
@@ -157,6 +154,7 @@ void readSerialData()
 		//Serial.println(msgType);
 		//Serial.println(message);
 		//Serial.println(payload);
+		Serial.println("");
 		if(String(msgType) == "info")
 		{
 			Serial.println("Received serial info data");
@@ -180,12 +178,72 @@ void readSerialData()
 			{
 				water_level = doc1["level"];
 			}
+			if(String(message ) == roomID + "/relay-controller-display-update-interval")
+			{
+				updateInterval = doc1[ "interval" ];
+				EEPROM.writeFloat(updateIntervalFlashAddress, updateInterval);
+				EEPROM.commit();
+			}
+			if(String(message ) == roomID + "/relay-controller-display-backlight")
+			{
+				backlightOn = doc1[ "on" ];
+				EEPROM.write(backlightOnFlashAddress, backlightOn);
+				EEPROM.commit();
+				if (backlightOn)
+				{
+					lcd.backlight();
+				}
+				else
+				{
+					lcd.noBacklight();
+				}
+			}
+			if(String( message ) == roomID + "/relay-controller-restart")
+			{
+			      ESP.restart( );
+			}
 		}
 		else
 		{
 			Serial.println("Received serial uncaught data");
 		}
 		Serial.println(content);
+	}
+}
+
+void updateDisplayValues()
+{
+	unsigned long currentMillis = millis();
+	if ( currentMillis - previousMillis >= updateInterval ) 
+	{
+		previousMillis = currentMillis;
+		lcd.clear( );
+		lcd.setCursor( 0, 0 );
+		lcd.print( String( dtemperature, 1 ).c_str( ) );
+		lcd.print( ( char ) 223 );
+		lcd.print( " | " );
+		lcd.print( String( t, 1 ).c_str( ) );
+		lcd.print( ( char ) 223 );
+		lcd.print( "  " );
+		lcd.print( String( h, 1 ).c_str());
+		lcd.print("%");
+		lcd.setCursor( 7, 1 );
+		lcd.print( "Water" );
+		lcd.setCursor( 0, 2 );
+		lcd.print( "ph:" );
+		lcd.print( String( ph, 2 ).c_str() );
+		lcd.setCursor( 15, 2 );
+		lcd.print( String( water_temp, 1 ).c_str( ) );
+		lcd.print( ( char ) 223 );
+		lcd.setCursor( 8, 3 );
+		lcd.print( water_level );
+		lcd.print( "%" );
+		lcd.setCursor( 0, 3 );
+		lcd.print( "ec:" );
+		lcd.print( String( ec, 1 ).c_str( ) );
+		lcd.setCursor( 14, 3 );
+		lcd.print( String( ppm, 0 ).c_str( ) );
+		lcd.print( "ppm" );
 	}
 }
 
@@ -233,7 +291,7 @@ void setup()
 	// IO Extender
 	pcf8575.begin();
 	// EEPROM
-	EEPROM.begin( 8 );
+	EEPROM.begin( 255 );
 	// Solenoid valve
 	solValveRelayState = EEPROM.read( solValveFlashAddress );
 	pcf8575.digitalWrite( SOLENOID_VALVE_RELAY_PIN, solValveRelayState );
@@ -266,18 +324,22 @@ void setup()
 	aircoRelayState = EEPROM.read( aircoFlashAddress );
 	pcf8575.digitalWrite( AIRCO_RELAY_PIN, aircoRelayState );
 	digitalWrite( AIRCO_LED_PIN, ( "LOW" == ( aircoRelayState ? "HIGH" : "LOW" ) ) );
-
-	//attachInterrupt( digitalPinToInterrupt(SOLENOID_VALVE_BTN_PIN), waterValveISR, CHANGE);
-
 	// Lcd
-	Wire.begin( ); 
+	Wire.begin(); 
 	lcd.begin();
-	lcd.backlight( );
-	lcd.clear( );
-	lcd.setCursor ( 0, 0 ); 
-	lcd.print( "Starting" ); 
-	
-	delay( 300 );
+	lcd.clear();
+	lcd.setCursor (0, 0); 
+	lcd.print("Starting"); 
+	updateInterval = EEPROM.readFloat(updateIntervalFlashAddress);
+	backlightOn = EEPROM.read(backlightOnFlashAddress);
+	if(backlightOn)
+	{
+		lcd.backlight();
+	}
+	else
+	{
+		lcd.noBacklight();
+	}
 }
 
 void loop() 
@@ -291,47 +353,6 @@ void loop()
 	fanBtnState = changeRelayStateManually( fanBtnState, fanRelayState, FAN_BTN_PIN, FAN_RELAY_PIN, FAN_LED_PIN, fanFlashAddress, "device-manual-action/" + roomID + "/fan-btn-pressed" );
 	aircoBtnState = changeRelayStateManually( aircoBtnState, aircoRelayState, AIRCO_BTN_PIN, AIRCO_RELAY_PIN, AIRCO_LED_PIN, aircoFlashAddress, "device-manual-action/" + roomID + "/airco-btn-pressed" );
 	readSerialData( );
-	unsigned long currentMillis = millis();
-	if ( currentMillis - previousMillis >= updateInterval ) 
-	{
-		// save the last time you updated the values
-		previousMillis = currentMillis;
-
-		lcd.clear( );
-		lcd.setCursor( 0, 0 );
-		lcd.print( String( dtemperature, 1 ).c_str( ) );
-		lcd.print( ( char ) 223 );
-
-		lcd.print( " | " );
-
-		lcd.print( String( t, 1 ).c_str( ) );
-		lcd.print( ( char ) 223 );
-		lcd.print( "  " );
-		lcd.print( String( h, 1 ).c_str());
-		lcd.print("%");
-
-		lcd.setCursor( 7, 1 );
-		lcd.print( "Water" );
-
-		lcd.setCursor( 0, 2 );
-		lcd.print( "ph:" );
-		lcd.print( String( ph, 2 ).c_str() );
-
-		lcd.setCursor( 15, 2 );
-		lcd.print( String( water_temp, 1 ).c_str( ) );
-		lcd.print( ( char ) 223 );
-
-		lcd.setCursor( 8, 3 );
-		lcd.print( water_level );
-		lcd.print( "%" );
-
-		lcd.setCursor( 0, 3 );
-		lcd.print( "ec:" );
-		lcd.print( String( ec, 1 ).c_str( ) );
-
-		lcd.setCursor( 14, 3 );
-		lcd.print( String( ppm, 0 ).c_str( ) );
-		lcd.print( "ppm" );
-	}
+	updateDisplayValues();
 	//delay(10000);
 }

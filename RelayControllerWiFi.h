@@ -17,6 +17,7 @@ const String mqttTopic = roomID + "/display";
 String content = "";
 bool mqttConnected = false;
 
+// Init software serial
 SoftwareSerial nodemcu(RXD2, TXD2); //RX, TX
 
 void sendSerialData(String dataType, String message, String payload)
@@ -25,11 +26,9 @@ void sendSerialData(String dataType, String message, String payload)
 	doc["type"] = dataType;
 	doc["message"] = message;
 	doc["payload"] = payload;
-	Serial.println("");
-	Serial.println("Sending serial data: ");
 	serializeJson(doc, Serial);
-	serializeJson(doc, nodemcu);
 	Serial.println("");
+	serializeJson(doc, nodemcu);
 	delay(1000);
 }
 
@@ -39,29 +38,30 @@ void mqtt_callback( char* topic, byte* payload, unsigned int length )
 	Serial.print("Message arrived [");
 	Serial.print(topic);
 	Serial.print("] ");
-	int i = 0;
-	for (i; i < length; i++) 
+	for (int i = 0; i < length; i++) 
 	{
 		Serial.print((char)payload[i]);
 	}
 	if((char)payload[0] == '1' || (char)payload[0] == '0')
 	{
+		Serial.println("Sending serial command");
 		sendSerialData("command", topic, String((char)payload[0]));
-	}
-	if(String(topic) == roomID +"/water-level")
-	{
-		StaticJsonDocument<256> doc;
-		deserializeJson( doc, ( const byte* ) payload, length );
-		char buffer[256];
-		serializeJson(doc, buffer);
-		//Serial.print(String(buffer));
-		sendSerialData("json", topic, String(buffer));
 	}
 	else
 	{
-		Serial.println("Uncaught mqtt callback");
+		//Serial.println("Uncaught mqtt callback");
+		Serial.println("Sending serial json data");
+		StaticJsonDocument<256> doc;
+		deserializeJson(doc, (const byte*)payload, length);
+		char buffer[256];
+		serializeJson(doc, buffer);
+		sendSerialData("json", topic, String(buffer));
+		if(String( topic ) == roomID + "/relay-controller-restart")
+		{
+			delay(1000);
+			ESP.restart();
+		}
 	}
-	
 }
 
 // Wifi tools
@@ -83,9 +83,10 @@ void mqttSubscribe(String roomID)
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/lights").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/fan").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/airco").c_str()));
-	mqtt.subscribe(const_cast<char*>(String(roomID + "/display-update-interval").c_str()));
-	mqtt.subscribe(const_cast<char*>(String(roomID + "/display-backlight").c_str()));
-	mqtt.subscribe(const_cast<char*>(String(roomID + "/display-restart").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/air-values").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/relay-controller-display-update-interval").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/relay-controller-display-backlight").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/relay-controller-restart").c_str()));
 }
 
 void readSerialData( )
@@ -102,6 +103,9 @@ void readSerialData( )
 			const char* msgType = doc["type"];
 			const char* message = doc["message"];
 			const char* payload = doc["payload"];
+			//Serial.println(msgType);
+			//Serial.println(message);
+			//Serial.println(payload);
 			if(String(msgType) == "info")
 			{
 				Serial.println("Received serial info data");
@@ -109,9 +113,6 @@ void readSerialData( )
 			else if(String(msgType) == "command")
 			{
 				Serial.println("Received serial command");
-				//Serial.println(msgType);
-				//Serial.println(message);
-				//Serial.println(payload);
 			}
 			else if(String(msgType) == "mqtt")
 			{
