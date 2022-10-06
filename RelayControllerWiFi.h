@@ -1,5 +1,4 @@
 #ifndef _RELAY_CONTROLLER_WIFI_DEFAULT_CONFIG_
-	#define _RELAY_CONTROLLER_WIFI_DEFAULT_CONFIG_	
 	#include "RelayControllerWiFiDefaultConfig.h"
 #endif
 
