@@ -1,4 +1,4 @@
-# arduino-grow-system
+# Arduino Grow System
 
 Automated grow system arudino ide sketches
 
