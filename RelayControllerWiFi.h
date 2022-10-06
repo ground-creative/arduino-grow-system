@@ -46,6 +46,7 @@ void mqtt_callback( char* topic, byte* payload, unsigned int length )
 	{
 		Serial.println("Sending serial command");
 		sendSerialData("command", topic, String((char)payload[0]));
+		delay(300);
 	}
 	else
 	{
@@ -56,6 +57,7 @@ void mqtt_callback( char* topic, byte* payload, unsigned int length )
 		char buffer[256];
 		serializeJson(doc, buffer);
 		sendSerialData("json", topic, String(buffer));
+		delay(300);
 		if(String( topic ) == roomID + "/relay-controller-restart")
 		{
 			delay(1000);
@@ -193,7 +195,7 @@ void setup()
 	sendSerialData("info", "Connected to WiFi", network.localAddress().toString());
 	delay(2000);
 	sendSerialData("info", "Connecting to mqtt", "");
-	if(mqtt.connect(mqtt_username, mqtt_password))
+	if (mqtt.connect(mqtt_username, mqtt_password))
 	{
 		sendSerialData("info", "Connected to mqtt", "");
 		// Subscribe to mqtt messages
@@ -210,11 +212,11 @@ void setup()
 void loop() 
 {
 	// check if we are connected to WiFi
-	if(network.status( ) != WL_CONNECTED)
+	if (network.status( ) != WL_CONNECTED)
 	{
 		network.check();
 	}
-	if(!mqtt.isConnected())
+	if (!mqtt.isConnected())
 	{
 		mqttConnected = false;
 		//if (!START_SERIAL_DEBUG)
