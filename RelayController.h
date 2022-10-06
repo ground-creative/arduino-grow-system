@@ -1,3 +1,8 @@
+#ifndef _RELAY_CONTROLLER_DEFAULT_CONFIG_
+	#define _RELAY_CONTROLLER_DEFAULT_CONFIG_	
+	#include "RelayControllerDefaultConfig.h"
+#endif
+
 // Net tools library
 #include <NetTools.h>
 

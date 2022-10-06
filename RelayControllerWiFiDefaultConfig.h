@@ -1,21 +1,26 @@
-/********* START CONFIG *******************************/
+#ifndef _RELAY_CONTROLLER_WIFI_DEFAULT_CONFIG_
+	#define _RELAY_CONTROLLER_WIFI_DEFAULT_CONFIG_	
 
-// System ID
-//const String roomID = "kroom";
+	/********* START CONFIG *******************************/
 
-// Network credentials
-//const char* ssid = "";
-//const char* password = "";
+	// System ID
+	//const String roomID = "kroom";
 
-// MQTT Broker:
-//const char *mqtt_server = "";
-//const char *mqtt_username = "";
-//const char *mqtt_password = "";
+	// Network credentials
+	//const char* ssid = "";
+	//const char* password = "";
 
-#define RXD2 16
-#define TXD2 17
-#define WIFI_LED_PIN 5
-#define MQTT_LED_PIN 18
-#define BAUD_RATE 4800
+	// MQTT Broker:
+	//const char *mqtt_server = "";
+	//const char *mqtt_username = "";
+	//const char *mqtt_password = "";
 
-/************ END CONFIG ******************************/
+	#define RXD2 16
+	#define TXD2 17
+	#define WIFI_LED_PIN 5
+	#define MQTT_LED_PIN 18
+	#define BAUD_RATE 4800
+
+	/************ END CONFIG ******************************/
+
+#endif

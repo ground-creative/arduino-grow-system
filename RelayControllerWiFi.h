@@ -1,3 +1,8 @@
+#ifndef _RELAY_CONTROLLER_WIFI_DEFAULT_CONFIG_
+	#define _RELAY_CONTROLLER_WIFI_DEFAULT_CONFIG_	
+	#include "RelayControllerWiFiDefaultConfig.h"
+#endif
+
 // Net tools
 #include <NetTools.h>
 
@@ -17,32 +22,32 @@ SoftwareSerial nodemcu(RXD2, TXD2); //RX, TX
 
 void sendSerialData(String dataType, String message, String payload)
 {
-  DynamicJsonDocument doc(2048);
-  doc["type"] = dataType;
-  doc["message"] = message;
-  doc["payload"] = payload;
-  Serial.println("Sending serial data: ");
-  serializeJson(doc, Serial);
-  serializeJson(doc, nodemcu);
-  Serial.println("");
-  delay(1000);
+	DynamicJsonDocument doc(2048);
+	doc["type"] = dataType;
+	doc["message"] = message;
+	doc["payload"] = payload;
+	Serial.println("Sending serial data: ");
+	serializeJson(doc, Serial);
+	serializeJson(doc, nodemcu);
+	Serial.println("");
+	delay(1000);
 }
 
 void mqtt_callback( char* topic, byte* payload, unsigned int length ) 
 {  
-  Serial.println("");
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) 
-  {
-    Serial.print((char)payload[i]);
-  }
-  if((char)payload[0] == '1' || (char)payload[0] == '0')
-  {
-    sendSerialData("command", topic, String((char)payload[0]));
-  }
-  //sendSerialData("command", topic, String((char *)payload));
+	Serial.println("");
+	Serial.print("Message arrived [");
+	Serial.print(topic);
+	Serial.print("] ");
+	for (int i = 0; i < length; i++) 
+	{
+		Serial.print((char)payload[i]);
+	}
+	if((char)payload[0] == '1' || (char)payload[0] == '0')
+	{
+		sendSerialData("command", topic, String((char)payload[0]));
+	}
+	//sendSerialData("command", topic, String((char *)payload));
 }
 
 // Wifi tools
@@ -53,67 +58,67 @@ NetTools::MQTT mqtt(mqttClientID, mqtt_server, mqtt_callback);
 
 void mqttSubscribe(String roomID)
 {
-  Serial.println("Subscribing to mqtt messages");
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/water-tester").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/water-level").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/drain-pump").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/water-valve").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/feeding-pump").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/mixing-pump").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/extractor").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/lights").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/fan").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/airco").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/display-update-interval").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/display-backlight").c_str()));
-  mqtt.subscribe(const_cast<char*>(String(roomID + "/display-restart").c_str()));
+	Serial.println("Subscribing to mqtt messages");
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/water-tester").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/water-level").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/drain-pump").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/water-valve").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/feeding-pump").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/mixing-pump").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/extractor").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/lights").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/fan").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/airco").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/display-update-interval").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/display-backlight").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/display-restart").c_str()));
 }
 
 void readSerialData( )
 {
-  if(nodemcu.available() > 0) 
-  {
-    while (nodemcu.available() > 0) 
-    {
-      content = nodemcu.readString( );
-      Serial.println("Received serial data");
-      Serial.println( content );
-      DynamicJsonDocument doc(2048);
-      deserializeJson(doc, content);
-      const char* msgType = doc["type"];
-      const char* message = doc["message"];
-      const char* payload = doc["payload"];
-      if(String(msgType) == "info")
-      {
-        Serial.println("Received serial info data");
-      }
-      else if(String(msgType) == "command")
-      {
-        Serial.println("Received serial command");
-        //Serial.println(msgType);
-        //Serial.println(message);
-        //Serial.println(payload);
-      }
-      else if(String(msgType) == "mqtt")
-      {
-        if(mqttConnected != true)
-        {
-          Serial.println("Received serial mqtt data but we are not connected to the server");
-        }
-        else
-        {
-          Serial.println("Received serial mqtt data");
-          mqtt.publish(const_cast<char*>(message),const_cast<char*>(payload));
-        }
-      }
-      else
-      {
-            Serial.println("Received serial uncaught data");
-      }
-      Serial.println(content);
-    }
-  } 
-}
+	if(nodemcu.available() > 0) 
+	{
+		while (nodemcu.available() > 0) 
+		{
+			content = nodemcu.readString( );
+			Serial.println("Received serial data");
+			Serial.println( content );
+			DynamicJsonDocument doc(2048);
+			deserializeJson(doc, content);
+			const char* msgType = doc["type"];
+			const char* message = doc["message"];
+			const char* payload = doc["payload"];
+			if(String(msgType) == "info")
+			{
+				Serial.println("Received serial info data");
+			}
+			else if(String(msgType) == "command")
+			{
+				Serial.println("Received serial command");
+				//Serial.println(msgType);
+				//Serial.println(message);
+				//Serial.println(payload);
+			}
+			else if(String(msgType) == "mqtt")
+			{
+				if(mqttConnected != true)
+				{
+					Serial.println("Received serial mqtt data but we are not connected to the server");
+				}
+				else
+				{
+					Serial.println("Received serial mqtt data");
+					mqtt.publish(const_cast<char*>(message),const_cast<char*>(payload));
+				}
+				}
+				else
+				{
+					Serial.println("Received serial uncaught data");
+				}
+				Serial.println(content);
+			}
+		} 
+	}
 
 void setup()  
 {
