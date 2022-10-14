@@ -10,6 +10,14 @@ String roomID = "your-system-id";
 #include "mainController.h"
 ```
 
+## Air sensors sketch
+```
+// System ID
+String roomID = "your-system-id";
+
+#include "airSensors.h"
+```
+
 ## WiFi chip sketch
 ```
 // Network credentials
@@ -25,14 +33,6 @@ const char *mqtt_password = "mqtt-password";
 String roomID = "your-system-id";
 
 #include "wifi.h"
-```
-
-## Air sensors sketch
-```
-// System ID
-String roomID = "your-system-id";
-
-#include "airSensors.h"
 ```
 
 ## Services
