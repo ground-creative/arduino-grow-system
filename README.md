@@ -1,6 +1,6 @@
 # Arduino Grow System
 
-Automated grow system arudino ide sketches
+Automated grow system arduino ide sketches
 
 ## Relay controller sketch
 ```
