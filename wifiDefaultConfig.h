@@ -9,7 +9,6 @@
 	
 	#define BAUD_RATE 4800
 	
-	//const int roomIDFlashAddress = 0;
 	const int componentIDFlashAddress = 0;
 
 #endif

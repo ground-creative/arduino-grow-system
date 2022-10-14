@@ -3,9 +3,6 @@
 
 	/********* START CONFIG *******************************/
 
-	// System ID
-	//String roomID = "koh-chang";
-
 	// Solenoid Valve
 	#define SOLENOID_VALVE_RELAY_PIN  19
 	#define SOLENOID_VALVE_BTN_PIN  23

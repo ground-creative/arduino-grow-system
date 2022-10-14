@@ -7,14 +7,11 @@ Automated grow system arudino ide sketches
 // System ID
 String roomID = "your-system-id";
 
-#include "RelayController.h"
+#include "mainController.h"
 ```
 
-## Relay controller WiFi sketch
+## WiFi chip sketch
 ```
-// System ID
-String roomID = "your-system-id";
-
 // Network credentials
 const char* ssid = "wifi-ssid";
 const char* password = "wifi-password";
@@ -24,35 +21,28 @@ const char *mqtt_server = "mqtt-server-address";
 const char *mqtt_username = "mqtt-username";
 const char *mqtt_password = "mqtt-password";
 
-#include "RelayControllerWiFi.h"
+// System ID
+String roomID = "your-system-id";
+
+#include "wifi.h"
 ```
 
 ## Air sensors sketch
 ```
 // System ID
 String roomID = "your-system-id";
-String componentID = "air-sensors";
-
-// use to calibrate this sensor
-//#define CALIBRATE_MQ135 1
 
 #include "airSensors.h"
 ```
 
-## Air sensors WiFi sketch
+## Services
 ```
-// System ID
-String roomID = "your-system-id";
-String componentID = "air-sensors";
+// Configue all wifi chips
+mosquitto_pub -t "groom/config-component-id" -m "1" -u "user" -P "pass"
 
-// Network credentials
-const char* ssid = "wifi-ssid";
-const char* password = "wifi-password";
+// Restart component
+mosquitto_pub -t "{systemID}/{air-sensors|main-controller|water-tester}-restart" -m "1" -u "user" -P "pass"
 
-// MQTT Broker:
-const char *mqtt_server = "mqtt-server-address";
-const char *mqtt_username = "mqtt-username";
-const char *mqtt_password = "mqtt-password";
-
-#include "esp01WiFi.h"
+// Component screen backlight on/off
+mosquitto_pub -t "{systemID}/{air-sensors|main-controller|water-tester}-display-backlight" -m "1|0" -u "user" -P "pass"
 ```

@@ -1,3 +1,9 @@
+/**
+	Grow system air sensors component
+	Author: Carlo Pietrobattista
+	Version: 1.0
+*/
+
 #ifndef AIR_SENSORS_CONFIG
 	#include "airSensorsDefaultConfig.h"
 #endif

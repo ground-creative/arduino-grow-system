@@ -1,5 +1,11 @@
+/**
+	Grow system wifi component
+	Author: Carlo Pietrobattista
+	Version: 1.0
+*/
+
 #ifndef WIFI_CONFIG
-	#include "esp01WiFiDefaultConfig.h"
+	#include "wifiDefaultConfig.h"
 #endif
 #include <NetTools.h>
 #include <ArduinoJson.h>
@@ -96,8 +102,6 @@ void mqttSubscribe(const String& roomID)
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	if (componentID == "air-sensors")
 	{
-		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
-		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/calibrate-mq135").c_str()));
 	}
 	else if (componentID == "main-controller")
@@ -114,8 +118,6 @@ void mqttSubscribe(const String& roomID)
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/airco").c_str()));
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/air-sensors").c_str()));
 		mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-update-interval").c_str()));
-		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
-		//mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	}
 }
 

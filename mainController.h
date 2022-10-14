@@ -1,3 +1,9 @@
+/**
+	Grow system main controller component
+	Author: Carlo Pietrobattista
+	Version: 1.0
+*/
+
 #ifndef MAIN_CONTROLLER_CONFIG
 	#include "mainControllerDefaultConfig.h"
 #endif
