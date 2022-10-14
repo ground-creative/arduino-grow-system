@@ -37,7 +37,7 @@ String roomID = "your-system-id";
 
 ## Services
 ```
-// Configue all wifi chips
+// Configure all wifi chips
 mosquitto_pub -t "{systemID}/config-component-id" -m "1" -u "user" -P "pass"
 
 // Restart component
