@@ -61,7 +61,7 @@ mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one-calibrate|p-two-calibr
 - 10 led 5mm (2 green, 2 orange, 1 white, 1 light green, 1 light blue, 1 blue, 1 red, 1 yellow)
 - 10 resistors(330 ohm more or less)
 - breadboard
-- 8 push buttons
+- 9 push buttons
 - 8 channel relay
 - lcd with i2c module
 - jumper wires
