@@ -68,4 +68,8 @@ mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one-calibrate|p-two-calibr
 - esp32 chip ( 38 pins)
 - esp shield board
 
+## Schematics
+
+### Main controller
+
 ![My Image](main-controller.jpg)
