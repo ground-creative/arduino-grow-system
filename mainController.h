@@ -1,7 +1,7 @@
 /**
 	Grow system main controller component
 	Author: Carlo Pietrobattista
-	Version: 1.1
+	Version: 1.2
 */
 
 #include "mainControllerDefaultConfig.h"
@@ -347,6 +347,13 @@ void netClientHandler( void * pvParameters )
 			{
 				network.connect();
 				digitalWrite(WIFI_LED_PIN, HIGH);
+				lcd.clear();
+				lcd.setCursor(0, 0);
+				lcd.print("Connected to WiFi");
+				lcd.setCursor(0, 1);
+				lcd.print("ip: ");
+				lcd.setCursor(4, 1);
+				lcd.print(network.localAddress().toString());
 			}
 			else if (network.status() != WL_CONNECTED)
 			{
@@ -359,6 +366,13 @@ void netClientHandler( void * pvParameters )
 					delay(1000);
 				}
 				digitalWrite(WIFI_LED_PIN, HIGH);
+				lcd.clear();
+				lcd.setCursor(0, 0);
+				lcd.print("Connected to WiFi");
+				lcd.setCursor(0, 1);
+				lcd.print("ip: ");
+				lcd.setCursor(4, 1);
+				lcd.print(network.localAddress().toString());
 			}
 			if (!mqtt.isConnected())
 			{
