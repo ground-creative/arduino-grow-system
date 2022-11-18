@@ -72,7 +72,7 @@ mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one-calibrate|p-two-calibr
 
 ### Main controller
 
-![My Image](main-controller.jpg)
+![My Image](main-controller-sc.jpg)
 
 ## Final parts example
 
