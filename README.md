@@ -2,7 +2,7 @@
 
 Automated grow system arduino ide sketches
 
-## Relay controller sketch
+## Main controller sketch
 ```
 // Network credentials
 const char* ssid = "wifi-ssid";
