@@ -62,7 +62,7 @@ mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one-calibrate|p-two-calibr
 - 10 resistors(330 ohm more or less)
 - breadboard
 - 9 push buttons
-- 8 channel relay
+- 8 channel relay module
 - lcd with i2c module
 - jumper wires
 - esp32 chip ( 38 pins)
