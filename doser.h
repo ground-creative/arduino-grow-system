@@ -1,3 +1,9 @@
+/**
+	Grow system main controller component
+	Author: Carlo Pietrobattista
+	Version: 1.2
+*/
+
 #include "doserDefaultConfig.h"
 #include <NetTools.h>
 #include <Arduino.h>
@@ -167,47 +173,47 @@ int changeRelayStateManually(int buttonPin, int relayPin, int &relayState)
 
 void netClientHandler( void * pvParameters )
 {
-  Serial.print("netClientHandler running on core ");
-  Serial.println(xPortGetCoreID());
-  for (;;)
-  {
-    unsigned long currentMillis = millis();
-    if(!wifiConnected || currentMillis - previousMillis >= checkConnectionInterval) 
-    {
-      //Serial.println("Checking connection");
-      previousMillis = currentMillis;
-      if (!wifiConnected)
-      {
-        network.connect();
-        digitalWrite(WIFI_LED_PIN, LOW);
-      }
-      else if (network.status() != WL_CONNECTED)
-      {
-        digitalWrite(WIFI_LED_PIN, HIGH);
-        digitalWrite(MQTT_LED_PIN, HIGH);
-        network.check();
-        while (network.status( ) != WL_CONNECTED)
-        {
-          Serial.print('.');
-          delay(1000);
-        }
-        digitalWrite(WIFI_LED_PIN, LOW);
-      }
-      if (!mqtt.isConnected())
-      {
-        digitalWrite(MQTT_LED_PIN, HIGH);
-        if (mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
-        {
-          mqttSubscribe(roomID);
-          digitalWrite(MQTT_LED_PIN, LOW);
-          delay(1000);
-        }
-      }
-      wifiConnected = true;
-    }
-    mqtt.loop();
-    delay(100);
-  }
+	Serial.print("netClientHandler running on core ");
+	Serial.println(xPortGetCoreID());
+	for (;;)
+	{
+		unsigned long currentMillis = millis();
+		if(!wifiConnected || currentMillis - previousMillis >= checkConnectionInterval) 
+		{
+			//Serial.println("Checking connection");
+			previousMillis = currentMillis;
+			if (!wifiConnected)
+			{
+				network.connect();
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			else if (network.status() != WL_CONNECTED)
+			{
+				digitalWrite(WIFI_LED_PIN, HIGH);
+				digitalWrite(MQTT_LED_PIN, HIGH);
+				network.check();
+				while (network.status( ) != WL_CONNECTED)
+				{
+					Serial.print('.');
+					delay(1000);
+				}
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (!mqtt.isConnected())
+			{
+				digitalWrite(MQTT_LED_PIN, HIGH);
+				if (mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
+				{
+					mqttSubscribe(roomID);
+					digitalWrite(MQTT_LED_PIN, LOW);
+					delay(1000);
+				}
+			}
+			wifiConnected = true;
+		}
+		mqtt.loop();
+		delay(100);
+	}
 }
 
 void setInitParams()

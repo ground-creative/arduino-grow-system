@@ -51,7 +51,7 @@ mosquitto_sub -t "device-status/{systemID}-{air-sensors|main-controller|water-te
 mosquitto_pub -t "{systemID}/main-controller-display-update-interval" -m "{value}" -u "user" -P "pass"
 
 // Calibrate dosing pumps
-mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one-calibrate|p-two-calibrate|p-three-calibrate|p-four-calibrate|p-five-calibrate|p-six-calibrate" -m "{value}" -u "user" -P "pass"
+mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one|p-two|p-three|p-four|p-five|p-six}-calibrate" -m "{value}" -u "user" -P "pass"
 ```
 
 ## Components list
@@ -59,10 +59,10 @@ mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one-calibrate|p-two-calibr
 ### Main controller
 
 - 10 led 5mm (2 green, 2 orange, 1 white, 1 light green, 1 light blue, 1 blue, 1 red, 1 yellow)
-- 10 resistors(330 ohm more or less)
+- 10 resistors (330 ohm more or less)
 - breadboard
 - 9 push buttons
-- 8 channel relay module
+- 8 channels relay module
 - lcd with i2c module
 - jumper wires
 - esp32 chip ( 38 pins)
