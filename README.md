@@ -79,3 +79,7 @@ mosquitto_pub -t "{systemID}/{doser-one|doser-two}/{p-one|p-two|p-three|p-four|p
 ### Main controller
 
 ![My Image](main-controller-ex.jpg)
+
+### Doser
+
+![My Image](doser-ex.jpg)
