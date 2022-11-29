@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.2.1"
+#define _VERSION_ "1.4.2"
 #include "mainControllerDefaultConfig.h"
 #include <NetTools.h>
 #include <Preferences.h>
@@ -14,6 +14,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
+#include <WebSerial.h>
 
 AsyncWebServer server(80);
 
@@ -36,6 +37,22 @@ long lastDebounceTime = 0, debounceDelay = 200;
 unsigned long previousMillis = 0, netPreviousMillis = 0, updateInterval;
 bool wifiConnected = false, backlightOn;
 
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println("");
+	WebSerial.println("Received Data...");
+	String d = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	WebSerial.println(d);
+	if(d == "restart" || d == "RESTART")
+	{
+		ESP.restart();
+	}
+}
+
 boolean debounceButton(boolean state, const int pin)
 {
 	boolean stateNow = digitalRead(pin);
@@ -50,15 +67,18 @@ boolean debounceButton(boolean state, const int pin)
 void changeRelayState(int value, int relayPin, const char* prefKey)
 {
 	Serial.println("");
+	WebSerial.println("");
 	if(value)
 	{
 		Serial.println("Switching on relay");
+		WebSerial.println("Switching on relay");
 		digitalWrite(relayPin, LOW);
 		preferences.putInt(prefKey, 0);
 	} 
 	else
 	{
 		Serial.println("Switching off relay");
+		WebSerial.println("Switching off relay");
 		digitalWrite(relayPin, HIGH);
 		preferences.putInt(prefKey, 1);
 	}    
@@ -70,13 +90,18 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	Serial.print("Message arrived [");
 	Serial.print(topic);
 	Serial.print("] ");
+	WebSerial.println("");
+	WebSerial.print("Message arrived [");
+	WebSerial.print(topic);
+	WebSerial.print("] ");
 	String content = "";
 	for (int i = 0; i < length; i++) 
 	{
-	      content += (char)payload[i];
-	      Serial.print((char)payload[i]);
+		content += (char)payload[i];
+		Serial.print((char)payload[i]);
 	}
-	Serial.println("");
+	//Serial.println("");
+	WebSerial.print(content);
 	if (String(topic) == roomID + "/" + componentID + "-restart")
 	{
 		ESP.restart();
@@ -87,11 +112,13 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		if (backlightOn)
 		{
 			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
 			lcd.backlight();
 		}
 		else
 		{
 			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
 			lcd.noBacklight();
 		}
 		preferences.putInt("backlight-on", backlightOn);
@@ -101,6 +128,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		updateInterval = content.toInt();
 		Serial.print("Setting display update interval to ");
 		Serial.print(updateInterval);
+		WebSerial.print("Setting display update interval to ");
+		WebSerial.print(String(updateInterval));
 		preferences.putUInt("update-interval", updateInterval);
 	}
 	else if (String(topic) == roomID + "/air-sensors")
@@ -203,6 +232,7 @@ NetTools::MQTT mqtt(mqtt_server, mqtt_callback);
 void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
+	WebSerial.println("Subscribing to mqtt messages");
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/water-tester").c_str()));
@@ -228,6 +258,9 @@ int changeRelayStateManually(int curBtnState, int &relayState, int btnPin, int r
 		Serial.println();
 		Serial.print("The button is pressed ");
 		Serial.println(mqttTopic);
+		WebSerial.println();
+		WebSerial.print("The button is pressed ");
+		WebSerial.println(mqttTopic);
 		relayState = !relayState;
 		digitalWrite(relayPin, relayState);
 		preferences.putInt(prefKey, relayState);
@@ -282,16 +315,16 @@ void updateDisplayValues()
 		{
 			co2CursorPos = 15;
 		}
-		lcd.setCursor( co2CursorPos, 2 );
-		lcd.print( valCo2 );
-		lcd.print( "ppm" );
-		lcd.setCursor( 9, 3 );
-		lcd.print( water_level );
-		lcd.print( "%" );
-		lcd.setCursor( 0, 3 );
-		lcd.print( "ec:" );
-		lcd.print( String( ec, 1 ).c_str( ) );
-		String valPPM = String( ppm, 0 ).c_str( );
+		lcd.setCursor(co2CursorPos, 2);
+		lcd.print(valCo2);
+		lcd.print("ppm");
+		lcd.setCursor(9, 3);
+		lcd.print(water_level);
+		lcd.print("%");
+		lcd.setCursor(0, 3);
+		lcd.print("ec:");
+		lcd.print(String(ec, 1).c_str());
+		String valPPM = String(ppm, 0).c_str();
 		int lenPPM = valPPM.length();
 		int ppmCursorPos = 16;
 		if (lenPPM == 4)
@@ -306,9 +339,9 @@ void updateDisplayValues()
 		{
 			ppmCursorPos = 15;
 		}
-		lcd.setCursor( ppmCursorPos, 3 );
-		lcd.print( valPPM );
-		lcd.print( "ppm" );
+		lcd.setCursor(ppmCursorPos, 3);
+		lcd.print(valPPM);
+		lcd.print("ppm");
 	}
 }
 
@@ -320,6 +353,7 @@ void lcdBacklightBtn()
 		if ( (resetButtonState == LOW) && (backlightOn) ) 
 		{
 			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
 			backlightOn = 0;
 			lcd.noBacklight();
 			lastDebounceTime = millis();
@@ -328,6 +362,7 @@ void lcdBacklightBtn()
 		else if ( (resetButtonState == LOW) ) 
 		{
 			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
 			backlightOn = 1;
 			lcd.backlight();
 			lastDebounceTime = millis();
@@ -493,8 +528,12 @@ void setup()
 		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_));
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	WebSerial.begin(&server);
+	WebSerial.msgCallback(recvMsg);
 	server.begin();
 	Serial.println("HTTP server started");
+	WebSerial.println("Component started with config " + roomID +  ":" + componentID);
+	WebSerial.println("HTTP server started");
 }
 
 void loop() 

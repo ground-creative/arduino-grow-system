@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.0.0"
+#define _VERSION_ "1.0.1"
 #include "doserDefaultConfig.h"
 #include <NetTools.h>
 #include <Arduino.h>
@@ -11,6 +11,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
+#include <WebSerial.h>
 
 AsyncWebServer server(80);
 
@@ -30,6 +31,22 @@ int pumpFourRelayState = HIGH, pumpFiveRelayState = HIGH, pumpSixRelayState = HI
 unsigned long previousMillis = 0; 
 unsigned long checkConnectionInterval = 5000;
 
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println("");
+	WebSerial.println("Received Data...");
+	String d = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	WebSerial.println(d);
+	if(d == "restart" || d == "RESTART")
+	{
+		ESP.restart();
+	}
+}
+
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
 {  
 	Serial.println("");
@@ -39,9 +56,11 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	String content = "";
 	for (int i = 0; i < length; i++) 
 	{
-	      content += (char)payload[i];
-	      Serial.print((char)payload[i]);
+		content += (char)payload[i];
+		Serial.print((char)payload[i]);
 	}
+	//Serial.println("");
+	WebSerial.print(content);
 	if (String(topic) == roomID + "/" + componentID + "-restart")
 	{
 		ESP.restart();
@@ -304,8 +323,12 @@ void setup()
 		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	WebSerial.begin(&server);
+	WebSerial.msgCallback(recvMsg);
 	server.begin();
 	Serial.println("HTTP server started");
+	WebSerial.println("Component started with config " + roomID +  ":" + componentID);
+	WebSerial.println("HTTP server started");
 }
 
 void loop() 

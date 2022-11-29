@@ -3,7 +3,7 @@
   Author: Ground Creative 
 */
 
-#define _VERSION_ "1.1.0"
+#define _VERSION_ "1.1.1"
 #include "airSensorsDefaultConfig.h"
 #include <NetTools.h>
 #include "SSD1306Ascii.h"
@@ -43,6 +43,7 @@ String wifiIP = "";
 
 void recvMsg(uint8_t *data, size_t len)
 {
+	WebSerial.println("");
 	WebSerial.println("Received Data...");
 	String d = "";
 	for(int i=0; i < len; i++)
@@ -50,6 +51,10 @@ void recvMsg(uint8_t *data, size_t len)
 		d += char(data[i]);
 	}
 	WebSerial.println(d);
+	if(d == "restart" || d == "RESTART")
+	{
+		ESP.restart();
+	}
 }
 
 void calibrateMQ135Sensor()
@@ -104,10 +109,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	{
 		content += (char)payload[i];
 		Serial.print((char)payload[i]);
-		WebSerial.print((char)payload[i]);
 	}
-	Serial.println("");
-	WebSerial.println("");
+	//Serial.println("");
+	WebSerial.print(content);
 	if (String(topic) == roomID + "/" + componentID + "-restart")
 	{
 		ESP.restart();
@@ -283,19 +287,19 @@ void updateOutTemp()
 	else
 	{      
 		outTempSensorCountRetries++;
-		Serial.print("Cannot read temperature DS1820, tried ");
+		Serial.print("Cannot read temperature DS18B20, tried ");
 		Serial.print(outTempSensorCountRetries);
 		Serial.print(" times");
 		Serial.println();
-		WebSerial.print("Cannot read temperature DS1820, tried ");
+		WebSerial.print("Cannot read temperature DS18B20, tried ");
 		WebSerial.print(outTempSensorCountRetries);
 		WebSerial.print(" times");
 		WebSerial.println();
 	}
-	Serial.print("DS1820 Temp: ");
+	Serial.print("DS18B20 Temp: ");
 	Serial.print(outTemp);
 	Serial.println();
-	WebSerial.print("DS1820 Temp: ");
+	WebSerial.print("DS18B20 Temp: ");
 	WebSerial.print(outTemp);
 	WebSerial.println();
 }

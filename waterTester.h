@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.1.1"
+#define _VERSION_ "1.1.2"
 #include "waterTesterDefaultConfig.h"
 #include <NetTools.h>
 #include <OneWire.h>
@@ -34,7 +34,7 @@ NetTools::WIFI network(ssid, password);
 
 String mqttClientID = roomID + "-" + componentID;
 
-OneWire oneWire(DS1820_PIN);
+OneWire oneWire(DS18B20_PIN);
 DallasTemperature sensors(&oneWire);
 
 float voltage, phValue = 0.0, tdsValue = 0, waterTemp = 0.0, ecValue = 0.0;
@@ -45,6 +45,7 @@ String wifiIP = "";
 
 void recvMsg(uint8_t *data, size_t len)
 {
+	WebSerial.println("");
 	WebSerial.println("Received Data...");
 	String d = "";
 	for(int i=0; i < len; i++)
@@ -52,6 +53,10 @@ void recvMsg(uint8_t *data, size_t len)
 		d += char(data[i]);
 	}
 	WebSerial.println(d);
+	if(d == "restart" || d == "RESTART")
+	{
+		ESP.restart();
+	}
 }
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
@@ -69,9 +74,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	{
 		content += (char)payload[i];
 		Serial.print((char)payload[i]);
-		WebSerial.print((char)payload[i]);
 	}
-	Serial.println("");
+	//Serial.println("");
+	WebSerial.print(content);
 	if (String(topic) == roomID + "/" + componentID + "-restart")
 	{
 		ESP.restart();
@@ -256,27 +261,27 @@ void updateTemp()
 	}
 	else if (waterTempSensorCountRetries == waterTempSensorMaxRetries)
 	{
-		Serial.println("Cannot read temperature DS1820 sensor problem, resetting");
-		WebSerial.println("Cannot read temperature DS1820 sensor problem, resetting");
+		Serial.println("Cannot read temperature DS18B20 sensor problem, resetting");
+		WebSerial.println("Cannot read temperature DS18B20 sensor problem, resetting");
 		//delay( 1000 );
 		ESP.restart();
 	}
 	else
 	{      
 		waterTempSensorCountRetries++;
-		Serial.print("Cannot read temperature DS1820, tried ");
+		Serial.print("Cannot read temperature DS18B20, tried ");
 		Serial.print(waterTempSensorCountRetries);
 		Serial.print(" times");
 		Serial.println();
-		WebSerial.print("Cannot read temperature DS1820, tried ");
+		WebSerial.print("Cannot read temperature DS18B20, tried ");
 		WebSerial.print(waterTempSensorCountRetries);
 		WebSerial.print(" times");
 		WebSerial.println();
 	}
-	Serial.print("DS1820 Temp: ");
+	Serial.print("DS18B20 Temp: ");
 	Serial.print(waterTemp);
 	Serial.println();
-	WebSerial.print("DS1820 Temp: ");
+	WebSerial.print("DS18B20 Temp: ");
 	WebSerial.print(waterTemp);
 	WebSerial.println();
 }

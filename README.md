@@ -158,7 +158,7 @@ https://{ipaddress}/webserial
 - 8 resistors (330 ohm more or less)
 - 12v power adapter (minimum 1 ohm)
 
-### Water Tester
+### Water tester
 
 - 2 leds (1 green, 1 orange)
 - 2 resistors (330 ohm more or less)
@@ -173,7 +173,7 @@ https://{ipaddress}/webserial
 - DS18B20 board
 - 5v power adapter
 
-### Air Sensors
+### Air sensors
 
 - 2 leds (1 green, 1 orange)
 - 2 resistors (330 ohm more or less)

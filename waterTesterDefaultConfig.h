@@ -6,7 +6,7 @@
 	#define ESPADC 4096.0   //the esp Analog Digital Convertion value
 	#define ESPVOLTAGE 3300 //the esp voltage supply value
 	#define PH_PIN 32    //the esp gpio data pin number
-	#define DS1820_PIN  23
+	#define DS18B20_PIN  23
 	#define WIFI_LED_PIN 18
 	#define MQTT_LED_PIN 19
 	
