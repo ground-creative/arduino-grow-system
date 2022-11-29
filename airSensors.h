@@ -1,6 +1,6 @@
 /**
 	Grow system air sensors component
-	Author: Carlo Pietrobattista
+	Author: Ground Creative 
 	Version: 1.0
 */
 

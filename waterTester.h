@@ -1,3 +1,9 @@
+/**
+	Grow system water tester component
+	Author: Ground Creative 
+	Version: 1.2
+*/
+
 #include "waterTesterDefaultConfig.h"
 #include <NetTools.h>
 #include <OneWire.h>

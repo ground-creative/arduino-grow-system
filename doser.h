@@ -1,6 +1,6 @@
 /**
-	Grow system main controller component
-	Author: Carlo Pietrobattista
+	Grow system doser component
+	Author: Ground Creative 
 	Version: 1.2
 */
 
