@@ -1,9 +1,9 @@
 /**
 	Grow system main controller component
 	Author: Ground Creative 
-	Version: 1.2
 */
 
+#define _VERSION_ "1.2.1"
 #include "mainControllerDefaultConfig.h"
 #include <NetTools.h>
 #include <Preferences.h>
@@ -11,6 +11,11 @@
 #include <Wire.h>
 #include "Arduino.h"
 #include <ArduinoJson.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
+
+AsyncWebServer server(80);
 
 TaskHandle_t netClient;
 Preferences preferences;
@@ -258,7 +263,7 @@ void updateDisplayValues()
 		lcd.print("Water & Co2");
 		lcd.setCursor(0, 2);
 		lcd.print("ph:");
-		lcd.print(String(ph, 1).c_str());
+		lcd.print(String(ph, 2).c_str());
 		lcd.setCursor(8, 2);
 		lcd.print(String(water_temp, 1).c_str());
 		lcd.print((char) 223);
@@ -483,6 +488,13 @@ void setup()
 		0                  		/* pin task to core 0 */   
 	);                        
 	delay(500); 
+	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
+	{
+		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+	} );
+	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	server.begin();
+	Serial.println("HTTP server started");
 }
 
 void loop() 
