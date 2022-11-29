@@ -107,6 +107,7 @@ mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "p
 - jumper wires
 - esp32 chip ( 38 pins)
 - esp shield board
+- 5v power adapter
 
 ### Doser
 
@@ -114,7 +115,7 @@ mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "p
 - 4 channel relay module
 - 2 channel relay module
 - jumper wires
-- esp32 chip ( 30 pins)
+- esp32 chip ( 38 pins)
 - esp shield board
 - 6 push buttons
 - half breadboard
@@ -135,6 +136,7 @@ mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "p
 - dfrobot tds sensor (max 1000ppm)
 - DS18B20 sensor
 - DS18B20 board
+- 5v power adapter
 
 ### Air Sensors
 
@@ -149,6 +151,7 @@ mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "p
 - ds18b20 sensor
 - ds18b20 board
 - mq-135 sensor
+- 5v power adapter
 
 ## Schematics
 
