@@ -105,6 +105,33 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 - esp32 chip ( 38 pins)
 - esp shield board
 
+### Doser
+
+- 8 led 5mm (2 green, 2 orange, 1 light green, 1 blue, 1 red, 1 yellow)
+- 4 channel relay module
+- 2 channel relay module
+- jumper wires
+- esp32 chip ( 30 pins)
+- esp shield board
+- 6 push buttons
+- half breadboard
+- 6 dosing pumps
+- 8 resistors (330 ohm more or less)
+- 12v power adapter (minimum 1 ohm)
+
+### Water Tester
+- 2 leds (1 green, 1 orange)
+- 2 resistors (330 ohm more or less)
+- quarter breadboard
+- oled display 128x64
+- esp32 chip ( 30 pins)
+- esp shield board
+- jumper wires
+- dfrobot ph sensor v2
+- dfrobot tds sensor (max 1000ppm)
+- ds1820 sensor
+- ds1820 board
+
 ## Schematics
 
 ### Main controller
