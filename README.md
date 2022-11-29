@@ -121,9 +121,13 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)-calibrate" -m "{value}" -u "user" -P "pass"
 ```
 
-## Upload firmware
+### Upload firmware
 
 https://{ipaddress}/update
+
+### Web serial
+
+https://{ipaddress}/webserial
 
 ## Components list
 
