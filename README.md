@@ -87,11 +87,38 @@ mosquitto_sub -t "device-status/{systemID}-(air-sensors|main-controller|water-te
 // Update display interval
 mosquitto_pub -t "{systemID}/{main-controller|water-tester|air-sensors}-display-update-interval" -m "{value}" -u "user" -P "pass"
 
-// Calibrate dosing pumps
-mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)-calibrate" -m "{value}" -u "user" -P "pass"
-
 // Calibrate mq-135 sensor
 mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "pass"
+
+// Main controller relay channel 1
+mosquitto_pub -t "{systemID}/water-valve" -m "{1|0}" -u "user" -P "pass"
+
+// Main controller relay channel 2
+mosquitto_pub -t "{systemID}/drain-pump" -m "{1|0}" -u "user" -P "pass"
+
+// Main controller relay channel 3
+mosquitto_pub -t "{systemID}/mixing-pump" -m "{1|0}" -u "user" -P "pass"
+
+// Main controller relay channel 4
+mosquitto_pub -t "{systemID}/extractor" -m "{1|0}" -u "user" -P "pass"
+
+// Main controller relay channel 5
+mosquitto_pub -t "{systemID}/lights" -m "{1|0}" -u "user" -P "pass"
+
+// Main controller relay channel 6
+mosquitto_pub -t "{systemID}/feeding-pump" -m "{1|0}" -u "user" -P "pass"
+
+// Main controller relay channel 7
+mosquitto_pub -t "{systemID}/fan" -m "{1|0}" -u "user" -P "pass"
+
+// Main controller relay channel 8
+mosquitto_pub -t "{systemID}/airco" -m "{1|0}" -u "user" -P "pass"
+
+// Doser pump on
+mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)" -m "{value}" -u "user" -P "pass"
+
+// Calibrate dosing pumps
+mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)-calibrate" -m "{value}" -u "user" -P "pass"
 ```
 
 ## Components list
@@ -163,7 +190,11 @@ mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "p
 
 ![My Image](images/doser-sc.jpg)
 
-### Air Sensors
+### Water tester
+
+![My Image](images/water-tester-sc.jpg)
+
+### Air sensors
 
 ![My Image](images/air-sensors-sc.jpg)
 
@@ -177,10 +208,10 @@ mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "p
 
 ![My Image](images/doser-ex.jpg)
 
-### Water Tester
+### Water tester
 
 ![My Image](images/water-tester-ex.jpg)
 
-### Air Sensors
+### Air sensors
 
 ![My Image](images/air-sensors-ex.jpg)
