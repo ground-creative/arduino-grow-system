@@ -85,7 +85,7 @@ mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester)-display-
 mosquitto_sub -t "device-status/{systemID}-(air-sensors|main-controller|water-tester|doser-one|doser-two)" -u "user" -P "pass"
 
 // Update display interval
-mosquitto_pub -t "{systemID}/main-controller-display-update-interval" -m "{value}" -u "user" -P "pass"
+mosquitto_pub -t "{systemID}/{main-controller|water-tester|air-sensors}-display-update-interval" -m "{value}" -u "user" -P "pass"
 
 // Calibrate dosing pumps
 mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)-calibrate" -m "{value}" -u "user" -P "pass"
