@@ -160,6 +160,10 @@ mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "p
 
 ![My Image](images/doser-sc.jpg)
 
+### Air Sensors
+
+![My Image](images/air-sensors-sc.jpg)
+
 ## Final parts example
 
 ### Main controller
