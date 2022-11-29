@@ -3,7 +3,7 @@
   Author: Ground Creative 
 */
 
-#define _VERSION_ "1.0.0"
+#define _VERSION_ "1.0.1"
 #include "airSensorsDefaultConfig.h"
 #include <NetTools.h>
 #include "SSD1306Ascii.h"
@@ -58,6 +58,7 @@ void calibrateMQ135Sensor()
 		Serial.print(".");
 	}
 	EEPROM.put(mq135ROFlashAddress, calcR0/10);
+	EEPROM.commit();
 	Serial.print("Saved R0 value: ");
 	Serial.print(calcR0/10);
 	Serial.println("  done!.");

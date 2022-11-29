@@ -13,7 +13,7 @@
   #define MQ_TYPE "MQ-135" 				
   #define VOLTAGE_RESOLUTION 3.3
   #define ADC_BIT_RESOLUTION 12
-  #define RATIO_MQ135_CLEAN_AIR 9.83	//RS / R0 = 3.6 ppm  
+  #define RATIO_MQ135_CLEAN_AIR 3.6	//RS / R0 = 3.6 ppm  
   
   const int oledFlashAddress = 20;
   const int updateIntervalFlashAddress = 30;
