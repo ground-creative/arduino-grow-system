@@ -1,9 +1,9 @@
 /**
 	Grow system water tester component
 	Author: Ground Creative 
-	Version: 1.2
 */
 
+#define _VERSION_ "1.0.0"
 #include "waterTesterDefaultConfig.h"
 #include <NetTools.h>
 #include <OneWire.h>
@@ -15,6 +15,9 @@
 #include "GravityTDS_ESP.h"
 #include "DFRobot_ESP_PH.h"
 #include <ArduinoJson.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
 
 GravityTDS_ESP gravityTds;
 DFRobot_ESP_PH ph;
@@ -22,6 +25,8 @@ SSD1306AsciiWire oled;
 
 // Component ID
 String componentID = "water-tester";
+
+AsyncWebServer server(80);
 
 TaskHandle_t netClient;
 NetTools::WIFI network(ssid, password);
@@ -306,6 +311,13 @@ void setup()
 		0                     /* pin task to core 0 */   
 	);                        
 	delay(500); 
+	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
+	{
+		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+	} );
+	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	server.begin();
+	Serial.println("HTTP server started");
 }
 
 void loop() 

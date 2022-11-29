@@ -1,9 +1,9 @@
 /**
   Grow system air sensors component
   Author: Ground Creative 
-  Version: 1.2
 */
 
+#define _VERSION_ "1.0.0"
 #include "airSensorsDefaultConfig.h"
 #include <NetTools.h>
 #include "SSD1306Ascii.h"
@@ -14,6 +14,11 @@
 #include <ArduinoJson.h>
 #include <EEPROM.h>
 #include <MQUnifiedsensor.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
+
+AsyncWebServer server(80);
 
 DHT dht(DHT_PIN, DHT_TYPE);
 OneWire oneWire(DS18B20_PIN);
@@ -373,6 +378,13 @@ void setup()
 		0                     			/* pin task to core 0 */   
 	);                        
 	delay(500); 
+	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
+	{
+		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+	} );
+	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	server.begin();
+	Serial.println("HTTP server started");
 }
 
 void loop() 

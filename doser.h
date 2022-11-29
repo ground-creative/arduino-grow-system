@@ -1,13 +1,18 @@
 /**
 	Grow system doser component
 	Author: Ground Creative 
-	Version: 1.2
 */
 
+#define _VERSION_ "1.0.0"
 #include "doserDefaultConfig.h"
 #include <NetTools.h>
 #include <Arduino.h>
 #include <EEPROM.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
+
+AsyncWebServer server(80);
 
 TaskHandle_t netClient;
 NetTools::WIFI network(ssid, password);
@@ -294,6 +299,13 @@ void setup()
 		0                  		/* pin task to core 0 */   
 	);                        
 	delay(500); 
+	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
+	{
+		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+	} );
+	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	server.begin();
+	Serial.println("HTTP server started");
 }
 
 void loop() 
