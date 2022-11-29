@@ -9,16 +9,18 @@
   #define WIFI_LED_PIN 19
   #define MQTT_LED_PIN 18
   
-  #define BOARD "ESP32"
-  #define MQ_TYPE "MQ-135" //MQ135
-  #define VOLTAGE_RESOLUTION 5
-  #define ADC_BIT_RESOLUTION 10
-  #define RATIO_MQ135_CLEAN_AIR 3.6//RS / R0 = 3.6 ppm  
+  #define BOARD "ESP-32"
+  #define MQ_TYPE "MQ-135" 				
+  #define VOLTAGE_RESOLUTION 3.3
+  #define ADC_BIT_RESOLUTION 12
+  #define RATIO_MQ135_CLEAN_AIR 9.83	//RS / R0 = 3.6 ppm  
   
   const int oledFlashAddress = 20;
   const int updateIntervalFlashAddress = 30;
+  const int mq135ROFlashAddress = 50;
   const int outTempSensorMaxRetries = 10;
   unsigned long checkConnectionInterval = 5000;
+  unsigned long co2BaseValue = 400;
   
 #endif
 

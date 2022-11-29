@@ -89,6 +89,9 @@ mosquitto_pub -t "{systemID}/{main-controller|water-tester|air-sensors}-display-
 
 // Calibrate dosing pumps
 mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)-calibrate" -m "{value}" -u "user" -P "pass"
+
+// Calibrate mq-135 sensor
+mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "pass"
 ```
 
 ## Components list
@@ -120,6 +123,7 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 - 12v power adapter (minimum 1 ohm)
 
 ### Water Tester
+
 - 2 leds (1 green, 1 orange)
 - 2 resistors (330 ohm more or less)
 - quarter breadboard
@@ -131,6 +135,20 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 - dfrobot tds sensor (max 1000ppm)
 - DS18B20 sensor
 - DS18B20 board
+
+### Air Sensors
+
+- 2 leds (1 green, 1 orange)
+- 2 resistors (330 ohm more or less)
+- oled display 128x64
+- esp32 chip ( 30 pins)
+- esp shield board
+- half breadboard
+- jumper wires
+- dht22 sensor
+- ds18b20 sensor
+- ds18b20 board
+- mq-135 sensor
 
 ## Schematics
 
@@ -155,3 +173,7 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 ### Water Tester
 
 ![My Image](images/water-tester-ex.jpg)
+
+### Air Sensors
+
+![My Image](images/air-sensors-ex.jpg)
