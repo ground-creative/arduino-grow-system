@@ -269,7 +269,7 @@ void setup()
 	oled.clear();
 	oledOn = EEPROM.read( oledFlashAddress );
 	updateInterval = EEPROM.get(updateIntervalFlashAddress, updateInterval);
-	if ( !updateInterval || updateInterval < 1000 || updateInterval == 4294967200)
+	if (!updateInterval || updateInterval < 1000 || updateInterval == 4294967200)
 	{
 		updateInterval = 10000;
 	}

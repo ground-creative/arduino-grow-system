@@ -129,8 +129,8 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 - jumper wires
 - dfrobot ph sensor v2
 - dfrobot tds sensor (max 1000ppm)
-- ds1820 sensor
-- ds1820 board
+- DS18B20 sensor
+- DS18B20 board
 
 ## Schematics
 
