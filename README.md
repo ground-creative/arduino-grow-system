@@ -34,7 +34,7 @@ const char *mqtt_password = "mqtt-password";
 String roomID = "your-system-id";
 
 // Component ID
-String componentID = "doser-one|doser-two";
+String componentID = "(doser-one|doser-two)";
 
 #include "doser.h"
 ```
@@ -54,6 +54,23 @@ const char *mqtt_password = "mqtt-password";
 String roomID = "your-system-id";
 
 #include "airSensors.h"
+```
+
+## Water tester sketch
+```
+// Network credentials
+const char* ssid = "wifi-ssid";
+const char* password = "wifi-password";
+
+// MQTT Broker:
+const char *mqtt_server = "mqtt-server-address";
+const char *mqtt_username = "mqtt-username";
+const char *mqtt_password = "mqtt-password";
+
+// System ID
+String roomID = "your-system-id";
+
+#include "waterTester.h"
 ```
 
 ## Services
@@ -92,18 +109,18 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 
 ### Main controller
 
-![My Image](main-controller-sc.jpg)
+![My Image](images/main-controller-sc.jpg)
 
 ### Doser
 
-![My Image](doser-sc.jpg)
+![My Image](images/doser-sc.jpg)
 
 ## Final parts example
 
 ### Main controller
 
-![My Image](main-controller-ex.jpg)
+![My Image](images/main-controller-ex.jpg)
 
 ### Doser
 
-![My Image](doser-ex.jpg)
+![My Image](images/doser-ex.jpg)
