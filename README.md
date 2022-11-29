@@ -124,3 +124,7 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 ### Doser
 
 ![My Image](images/doser-ex.jpg)
+
+### Water Tester
+
+![My Image](images/water-tester-ex.jpg)
