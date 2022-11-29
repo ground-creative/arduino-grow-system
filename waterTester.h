@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.0.0"
+#define _VERSION_ "1.1.1"
 #include "waterTesterDefaultConfig.h"
 #include <NetTools.h>
 #include <OneWire.h>
@@ -18,6 +18,9 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
+#include <WebSerial.h>
+
+AsyncWebServer server(80);
 
 GravityTDS_ESP gravityTds;
 DFRobot_ESP_PH ph;
@@ -25,8 +28,6 @@ SSD1306AsciiWire oled;
 
 // Component ID
 String componentID = "water-tester";
-
-AsyncWebServer server(80);
 
 TaskHandle_t netClient;
 NetTools::WIFI network(ssid, password);
@@ -42,17 +43,33 @@ unsigned long previousMillis = 0, netPreviousMillis = 0, updateInterval = 10000;
 bool wifiConnected = false, oledOn = true;
 String wifiIP = "";
 
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println("Received Data...");
+	String d = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	WebSerial.println(d);
+}
+
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
 {  
 	Serial.println("");
 	Serial.print("Message arrived [");
 	Serial.print(topic);
 	Serial.print("] ");
+	WebSerial.println("");
+	WebSerial.print("Message arrived [");
+	WebSerial.print(topic);
+	WebSerial.print("] ");
 	String content = "";
 	for (int i = 0; i < length; i++) 
 	{
-	      content += (char)payload[i];
-	      Serial.print((char)payload[i]);
+		content += (char)payload[i];
+		Serial.print((char)payload[i]);
+		WebSerial.print((char)payload[i]);
 	}
 	Serial.println("");
 	if (String(topic) == roomID + "/" + componentID + "-restart")
@@ -65,10 +82,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		if (oledOn)
 		{
 			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
 		}
 		else
 		{
 			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
 			oled.clear();
 		}
 		EEPROM.write(oledFlashAddress, oledOn);
@@ -79,6 +98,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		updateInterval = content.toInt();
 		Serial.print("Setting sensors update interval to ");
 		Serial.print(updateInterval);
+		WebSerial.print("Setting sensors update interval to ");
+		WebSerial.print(String(updateInterval));
 		EEPROM.put(updateIntervalFlashAddress, updateInterval);
 		EEPROM.commit();
 	}
@@ -89,6 +110,7 @@ NetTools::MQTT mqtt(mqtt_server, mqtt_callback);
 void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
+	WebSerial.println("Subscribing to mqtt messages");
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-update-interval").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
@@ -189,10 +211,16 @@ void updateTds()
 	}
 	tdsValue = gravityTds.getTdsValue();  // then get the value
 	ecValue = (tdsValue* 2/1000);
+	Serial.print("tds:	");
 	Serial.print(tdsValue,0);
 	Serial.println("ppm");
 	Serial.print("ec:	");
 	Serial.println(ecValue,1);
+	WebSerial.print("tds:	");
+	WebSerial.print(String(tdsValue,0));
+	WebSerial.println("ppm");
+	WebSerial.print("ec:	");
+	WebSerial.println(String(ecValue,1));
 }
 
 void updatePh()
@@ -204,9 +232,13 @@ void updatePh()
 	voltage = analogRead(PH_PIN) / ESPADC * ESPVOLTAGE; // read the voltage
 	Serial.print("voltage:");
 	Serial.println(voltage, 4);
+	WebSerial.print("voltage:");
+	WebSerial.println(String(voltage, 4));
 	phValue = ph.readPH(voltage, waterTemp); // convert voltage to pH with temperature compensation
 	Serial.print("pH:");
 	Serial.println(phValue, 4);
+	WebSerial.print("pH:");
+	WebSerial.println(String(phValue, 4));
 }
 
 void updateTemp()
@@ -225,6 +257,7 @@ void updateTemp()
 	else if (waterTempSensorCountRetries == waterTempSensorMaxRetries)
 	{
 		Serial.println("Cannot read temperature DS1820 sensor problem, resetting");
+		WebSerial.println("Cannot read temperature DS1820 sensor problem, resetting");
 		//delay( 1000 );
 		ESP.restart();
 	}
@@ -235,10 +268,17 @@ void updateTemp()
 		Serial.print(waterTempSensorCountRetries);
 		Serial.print(" times");
 		Serial.println();
+		WebSerial.print("Cannot read temperature DS1820, tried ");
+		WebSerial.print(waterTempSensorCountRetries);
+		WebSerial.print(" times");
+		WebSerial.println();
 	}
 	Serial.print("DS1820 Temp: ");
 	Serial.print(waterTemp);
 	Serial.println();
+	WebSerial.print("DS1820 Temp: ");
+	WebSerial.print(waterTemp);
+	WebSerial.println();
 }
 
 void publishValues()
@@ -274,7 +314,7 @@ void setup()
 	oled.clear();
 	oledOn = EEPROM.read( oledFlashAddress );
 	updateInterval = EEPROM.get(updateIntervalFlashAddress, updateInterval);
-	if (!updateInterval || updateInterval < 1000 || updateInterval == 4294967200)
+	if (!updateInterval || updateInterval < 1000 || updateInterval > 4290000000)
 	{
 		updateInterval = 10000;
 	}
@@ -316,8 +356,12 @@ void setup()
 		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	WebSerial.begin(&server);
+	WebSerial.msgCallback(recvMsg);
 	server.begin();
 	Serial.println("HTTP server started");
+	WebSerial.println("Component started with config " + roomID +  ":" + componentID);
+	WebSerial.println("HTTP server started");
 }
 
 void loop() 
@@ -339,6 +383,6 @@ void loop()
 	}
 	if (USE_PH)
 	{ 
-		ph.calibration(voltage, waterTemp); // calibration process by Serail CMD
+		ph.calibration(voltage, waterTemp); // calibration process by Serial CMD
 	}
 }

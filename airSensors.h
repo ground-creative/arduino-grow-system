@@ -3,7 +3,7 @@
   Author: Ground Creative 
 */
 
-#define _VERSION_ "1.0.1"
+#define _VERSION_ "1.1.0"
 #include "airSensorsDefaultConfig.h"
 #include <NetTools.h>
 #include "SSD1306Ascii.h"
@@ -17,6 +17,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
+#include <WebSerial.h>
 
 AsyncWebServer server(80);
 
@@ -40,6 +41,17 @@ unsigned int outTempSensorCountRetries = 0;
 bool wifiConnected = false, oledOn = true;
 String wifiIP = "";
 
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println("Received Data...");
+	String d = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	WebSerial.println(d);
+}
+
 void calibrateMQ135Sensor()
 {
 	/*****************************  MQ Calibration ********************************************/ 
@@ -50,6 +62,7 @@ void calibrateMQ135Sensor()
 	// This routine does not need to be executed on each restart, you can load your R0 value from eeprom.
 	// Acknowledgements: https://jayconsystems.com/blog/understanding-a-gas-sensor
 	Serial.print("Calibrating please wait.");
+	WebSerial.print("Calibrating please wait.");
 	float calcR0 = 0;
 	for(int i = 1; i<=10; i ++)
 	{
@@ -62,6 +75,9 @@ void calibrateMQ135Sensor()
 	Serial.print("Saved R0 value: ");
 	Serial.print(calcR0/10);
 	Serial.println("  done!.");
+	WebSerial.print("Saved R0 value: ");
+	WebSerial.print(calcR0/10);
+	WebSerial.println("  done!.");
 	oled.clear();
 	oled.setRow(1);
 	oled.setCursor(0, 0);
@@ -80,13 +96,18 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	Serial.print("Message arrived [");
 	Serial.print(topic);
 	Serial.print("] ");
+	WebSerial.print("Message arrived [");
+	WebSerial.print(topic);
+	WebSerial.print("] ");
 	String content = "";
 	for (int i = 0; i < length; i++) 
 	{
 		content += (char)payload[i];
 		Serial.print((char)payload[i]);
+		WebSerial.print((char)payload[i]);
 	}
 	Serial.println("");
+	WebSerial.println("");
 	if (String(topic) == roomID + "/" + componentID + "-restart")
 	{
 		ESP.restart();
@@ -97,10 +118,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		if (oledOn)
 		{
 			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
 		}
 		else
 		{
 			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
 			oled.clear();
 		}
 		EEPROM.write(oledFlashAddress, oledOn);
@@ -111,10 +134,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		updateInterval = content.toInt();
 		Serial.print("Setting sensors update interval to ");
 		Serial.print(updateInterval);
+		WebSerial.print("Setting sensors update interval to ");
+		WebSerial.print(String(updateInterval));
 		EEPROM.put(updateIntervalFlashAddress, updateInterval);
 		EEPROM.commit();
 	}
-	else if ( String(topic) == roomID + "/" + componentID + "/calibrate-mq135")
+	else if (String(topic) == roomID + "/" + componentID + "/calibrate-mq135")
 	{
 		calibrateMQ135Sensor();
 	}
@@ -125,6 +150,7 @@ NetTools::MQTT mqtt(mqtt_server, mqtt_callback);
 void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
+	WebSerial.println("Subscribing to mqtt messages");
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-update-interval").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
@@ -206,6 +232,9 @@ void updateCo2Values()
 	Serial.print("MQ135 CO2: ");
 	Serial.print(inCo2);
 	Serial.println();
+	WebSerial.print("MQ135 CO2: ");
+	WebSerial.print(inCo2);
+	WebSerial.println();
 }
 
 void updateDisplayValues()
@@ -222,14 +251,6 @@ void updateDisplayValues()
 	oled.setRow(2);
 	oled.set2X();
 	oled.setCursor(30, 10);
-	/*if (outTemp > 0.0)
-	{
-	led.println(String(inTemp,1) + "C" + " " + String(outTemp,1) + "C");
-	}
-	else
-	{
-	oled.println(String(inTemp,1) + "C");
-	}*/
 	oled.println(String(inTemp, 1) + "C");
 	oled.setRow(4);
 	oled.setCursor(30, 20);
@@ -255,6 +276,7 @@ void updateOutTemp()
 	else if (outTempSensorCountRetries == outTempSensorMaxRetries)
 	{
 		Serial.println("Cannot read temperature DS18B20 sensor problem, resetting");
+		WebSerial.println("Cannot read temperature DS18B20 sensor problem, resetting");
 		//delay( 1000 );
 		ESP.restart();
 	}
@@ -265,10 +287,17 @@ void updateOutTemp()
 		Serial.print(outTempSensorCountRetries);
 		Serial.print(" times");
 		Serial.println();
+		WebSerial.print("Cannot read temperature DS1820, tried ");
+		WebSerial.print(outTempSensorCountRetries);
+		WebSerial.print(" times");
+		WebSerial.println();
 	}
 	Serial.print("DS1820 Temp: ");
 	Serial.print(outTemp);
 	Serial.println();
+	WebSerial.print("DS1820 Temp: ");
+	WebSerial.print(outTemp);
+	WebSerial.println();
 }
 
 void updateInTempAndHum()
@@ -278,6 +307,7 @@ void updateInTempAndHum()
 	if ( isnan(inTempMem) ) 
 	{
 		Serial.println("Failed to read temperature from DHT sensor!");
+		WebSerial.println("Failed to read temperature from DHT sensor!");
 	}
 	else
 	{
@@ -285,11 +315,15 @@ void updateInTempAndHum()
 		Serial.print("DH22 Temp: ");
 		Serial.print(inTemp);
 		Serial.println();
+		WebSerial.print("DH22 Temp: ");
+		WebSerial.print(inTemp);
+		WebSerial.println();
 	}
 	float inHumMem = dht.readHumidity();
 	if ( isnan(inHumMem) ) 
 	{
 		Serial.println("Failed to read humidity from DHT sensor!");
+		WebSerial.println("Failed to read humidity from DHT sensor!");
 	}
 	else
 	{
@@ -297,6 +331,9 @@ void updateInTempAndHum()
 		Serial.print("DH22 Humidity: ");
 		Serial.print(inHum);
 		Serial.println();
+		WebSerial.print("DH22 Humidity: ");
+		WebSerial.print(inHum);
+		WebSerial.println();
 	}
 }
 
@@ -350,24 +387,6 @@ void setup()
 		delay(1000);
 		oled.clear();
 	}
-	if (USE_DS18B20){ sensors.begin( ); }
-	if (USE_DHT){ dht.begin(); }
-	if (USE_MQ135)
-	{
-		MQ135.setRegressionMethod(1); //_PPM =  a*ratio^b
-		MQ135.init(); 
-		MQ135.setRL(1);	// value is different from 10K
-		#ifdef CALIBRATE_MQ135
-			calibrateMQ135Sensor();
-		#endif
-		EEPROM.get(mq135ROFlashAddress, RO);
-		if ( isnan(RO) )
-		{
-			Serial.println("No RO found for co2 mq135 sensor, please calibrate");
-			RO = 1.0;
-		}
-		MQ135.setR0(RO);
-	}
 	xTaskCreatePinnedToCore
 	(
 		netClientHandler,     	/* Task function. */
@@ -384,8 +403,31 @@ void setup()
 		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
+	WebSerial.begin(&server);
+	WebSerial.msgCallback(recvMsg);
 	server.begin();
 	Serial.println("HTTP server started");
+	WebSerial.println("Component started with config " + roomID +  ":" + componentID);
+	WebSerial.println("HTTP server started");
+	if (USE_DS18B20){ sensors.begin( ); }
+	if (USE_DHT){ dht.begin(); }
+	if (USE_MQ135)
+	{
+		MQ135.setRegressionMethod(1); //_PPM =  a*ratio^b
+		MQ135.init(); 
+		MQ135.setRL(1);	// value is different from 10K
+		#ifdef CALIBRATE_MQ135
+			calibrateMQ135Sensor();
+		#endif
+		EEPROM.get(mq135ROFlashAddress, RO);
+		if ( isnan(RO) )
+		{
+			Serial.println("No RO found for co2 mq135 sensor, please calibrate");
+			WebSerial.println("No RO found for co2 mq135 sensor, please calibrate");
+			RO = 1.0;
+		}
+		MQ135.setR0(RO);
+	}
 }
 
 void loop() 

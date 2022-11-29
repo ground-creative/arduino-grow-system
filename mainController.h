@@ -410,62 +410,62 @@ void setup()
 	pinMode(MQTT_LED_PIN, OUTPUT);
 	digitalWrite(MQTT_LED_PIN, LOW);
 	// Set pin mode solenoid valve
-	pinMode( SOLENOID_VALVE_RELAY_PIN, OUTPUT );
-	pinMode( SOLENOID_VALVE_BTN_PIN, INPUT_PULLUP );
+	pinMode(SOLENOID_VALVE_RELAY_PIN, OUTPUT);
+	pinMode(SOLENOID_VALVE_BTN_PIN, INPUT_PULLUP);
 	// Set pin mode drain pump
-	pinMode( DRAIN_PUMP_RELAY_PIN, OUTPUT );
-	pinMode( DRAIN_PUMP_BTN_PIN, INPUT_PULLUP );
+	pinMode(DRAIN_PUMP_RELAY_PIN, OUTPUT);
+	pinMode(DRAIN_PUMP_BTN_PIN, INPUT_PULLUP);
 	// Set pin mode mixing pump
-	pinMode( MIXING_PUMP_RELAY_PIN, OUTPUT );
-	pinMode( MIXING_PUMP_BTN_PIN, INPUT_PULLUP );
+	pinMode(MIXING_PUMP_RELAY_PIN, OUTPUT);
+	pinMode(MIXING_PUMP_BTN_PIN, INPUT_PULLUP);
 	// Set pin mode extractor
-	pinMode( EXTRACTOR_RELAY_PIN, OUTPUT );
-	pinMode( EXTRACTOR_BTN_PIN, INPUT_PULLUP );	
+	pinMode(EXTRACTOR_RELAY_PIN, OUTPUT);
+	pinMode(EXTRACTOR_BTN_PIN, INPUT_PULLUP);	
 	// Set pin mode lights
-	pinMode( LIGHTS_RELAY_PIN, OUTPUT );
-	pinMode( LIGHTS_BTN_PIN, INPUT_PULLUP );
+	pinMode(LIGHTS_RELAY_PIN, OUTPUT );
+	pinMode(LIGHTS_BTN_PIN, INPUT_PULLUP);
 	// Set pin mode feeding pump
-	pinMode( FEEDING_PUMP_RELAY_PIN, OUTPUT );
-	pinMode( FEEDING_PUMP_BTN_PIN, INPUT_PULLUP );
+	pinMode(FEEDING_PUMP_RELAY_PIN, OUTPUT);
+	pinMode(FEEDING_PUMP_BTN_PIN, INPUT_PULLUP);
 	// Set pin mode fan
-	pinMode( FAN_RELAY_PIN, OUTPUT );
-	pinMode( FAN_BTN_PIN, INPUT_PULLUP );
+	pinMode(FAN_RELAY_PIN, OUTPUT);
+	pinMode(FAN_BTN_PIN, INPUT_PULLUP);
 	// Set pin mode airco
-	pinMode( AIRCO_RELAY_PIN, OUTPUT );
-	pinMode( AIRCO_BTN_PIN, INPUT_PULLUP );
+	pinMode(AIRCO_RELAY_PIN, OUTPUT);
+	pinMode(AIRCO_BTN_PIN, INPUT_PULLUP);
 	// Set pin mode reset button
-	pinMode(LCD_PIN, INPUT_PULLUP );
+	pinMode(LCD_PIN, INPUT_PULLUP);
 	// Solenoid valve
 	solValveRelayState = preferences.getInt("solenoid-valve", 1);
-	digitalWrite( SOLENOID_VALVE_RELAY_PIN, solValveRelayState );
+	digitalWrite(SOLENOID_VALVE_RELAY_PIN, solValveRelayState );
 	// Drain pump
 	drainPumpRelayState = preferences.getInt("drain-pump", 1);
-	digitalWrite( DRAIN_PUMP_RELAY_PIN, drainPumpRelayState );
+	digitalWrite(DRAIN_PUMP_RELAY_PIN, drainPumpRelayState);
 	// Mixing pump
 	mixingPumpRelayState = preferences.getInt("mixing-pump", 1);
-	digitalWrite( MIXING_PUMP_RELAY_PIN, mixingPumpRelayState );
+	digitalWrite(MIXING_PUMP_RELAY_PIN, mixingPumpRelayState);
 	// Extractor
 	extractorRelayState = preferences.getInt("extractor", 1);
-	digitalWrite( EXTRACTOR_RELAY_PIN, extractorRelayState );		
+	digitalWrite(EXTRACTOR_RELAY_PIN, extractorRelayState);		
 	// Lights
 	lightsRelayState = preferences.getInt("lights", 1);
-	digitalWrite( LIGHTS_RELAY_PIN, lightsRelayState );
+	digitalWrite(LIGHTS_RELAY_PIN, lightsRelayState);
 	// Feeding pump
 	feedingPumpRelayState = preferences.getInt("feeding-pump", 1);
-	digitalWrite( FEEDING_PUMP_RELAY_PIN, feedingPumpRelayState );
+	digitalWrite(FEEDING_PUMP_RELAY_PIN, feedingPumpRelayState);
 	// Fan
 	fanRelayState = preferences.getInt("fan", 1);
-	digitalWrite( FAN_RELAY_PIN, fanRelayState );
+	digitalWrite(FAN_RELAY_PIN, fanRelayState);
 	// Airco
 	aircoRelayState = preferences.getInt("airco", 1);
-	digitalWrite( AIRCO_RELAY_PIN, aircoRelayState );
+	digitalWrite(AIRCO_RELAY_PIN, aircoRelayState);
 	// Lcd
 	Wire.begin(); 
 	lcd.begin();
 	lcd.clear();
-	lcd.setCursor (0, 0); 
+	lcd.setCursor(0, 0); 
 	lcd.print("Starting"); 
-	lcd.setCursor (0, 2); 
+	lcd.setCursor(0, 2); 
 	lcd.print("roomID: " + roomID); 
 	updateInterval = preferences.getULong("update-interval", 10000);
 	backlightOn = preferences.getInt("backlight-on", 1);
@@ -490,7 +490,7 @@ void setup()
 	delay(500); 
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
 	{
-		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_));
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 	server.begin();
@@ -499,14 +499,14 @@ void setup()
 
 void loop() 
 {
-	solValveBtnState = changeRelayStateManually( solValveBtnState, solValveRelayState, SOLENOID_VALVE_BTN_PIN, SOLENOID_VALVE_RELAY_PIN, "solenoid-valve", "m/" + roomID + "/sv-btn" );
-	drainPumpBtnState = changeRelayStateManually( drainPumpBtnState, drainPumpRelayState, DRAIN_PUMP_BTN_PIN, DRAIN_PUMP_RELAY_PIN, "drain-pump","m/" + roomID + "/dp-btn" );
-	mixingPumpBtnState = changeRelayStateManually( mixingPumpBtnState, mixingPumpRelayState, MIXING_PUMP_BTN_PIN, MIXING_PUMP_RELAY_PIN, "mixing-pump", "m/" + roomID + "/mp-btn" );
-	extractorBtnState = changeRelayStateManually( extractorBtnState, extractorRelayState, EXTRACTOR_BTN_PIN, EXTRACTOR_RELAY_PIN, "extractor", "m/" + roomID + "/ex-btn" );
-	lightsBtnState = changeRelayStateManually( lightsBtnState, lightsRelayState, LIGHTS_BTN_PIN, LIGHTS_RELAY_PIN, "lights", "m/" + roomID + "/li-btn" );
-	feedingPumpBtnState = changeRelayStateManually( feedingPumpBtnState, feedingPumpRelayState, FEEDING_PUMP_BTN_PIN, FEEDING_PUMP_RELAY_PIN, "feeding-pump", "m/" + roomID + "/fp-btn" );
-	fanBtnState = changeRelayStateManually( fanBtnState, fanRelayState, FAN_BTN_PIN, FAN_RELAY_PIN, "fan", "m/" + roomID + "/fa-btn" );
-	aircoBtnState = changeRelayStateManually( aircoBtnState, aircoRelayState, AIRCO_BTN_PIN, AIRCO_RELAY_PIN, "airco", "m/" + roomID + "/ai-btn" );
+	solValveBtnState = changeRelayStateManually(solValveBtnState, solValveRelayState, SOLENOID_VALVE_BTN_PIN, SOLENOID_VALVE_RELAY_PIN, "solenoid-valve", "m/" + roomID + "/sv-btn");
+	drainPumpBtnState = changeRelayStateManually(drainPumpBtnState, drainPumpRelayState, DRAIN_PUMP_BTN_PIN, DRAIN_PUMP_RELAY_PIN, "drain-pump","m/" + roomID + "/dp-btn");
+	mixingPumpBtnState = changeRelayStateManually(mixingPumpBtnState, mixingPumpRelayState, MIXING_PUMP_BTN_PIN, MIXING_PUMP_RELAY_PIN, "mixing-pump", "m/" + roomID + "/mp-btn");
+	extractorBtnState = changeRelayStateManually(extractorBtnState, extractorRelayState, EXTRACTOR_BTN_PIN, EXTRACTOR_RELAY_PIN, "extractor", "m/" + roomID + "/ex-btn");
+	lightsBtnState = changeRelayStateManually(lightsBtnState, lightsRelayState, LIGHTS_BTN_PIN, LIGHTS_RELAY_PIN, "lights", "m/" + roomID + "/li-btn");
+	feedingPumpBtnState = changeRelayStateManually(feedingPumpBtnState, feedingPumpRelayState, FEEDING_PUMP_BTN_PIN, FEEDING_PUMP_RELAY_PIN, "feeding-pump", "m/" + roomID + "/fp-btn");
+	fanBtnState = changeRelayStateManually(fanBtnState, fanRelayState, FAN_BTN_PIN, FAN_RELAY_PIN, "fan", "m/" + roomID + "/fa-btn");
+	aircoBtnState = changeRelayStateManually(aircoBtnState, aircoRelayState, AIRCO_BTN_PIN, AIRCO_RELAY_PIN, "airco", "m/" + roomID + "/ai-btn");
 	lcdBacklightBtn();
 	updateDisplayValues();
 }
