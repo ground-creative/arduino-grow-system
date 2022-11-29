@@ -39,23 +39,6 @@ String componentID = "(doser-one|doser-two)";
 #include "doser.h"
 ```
 
-## Air sensors sketch
-```
-// Network credentials
-const char* ssid = "wifi-ssid";
-const char* password = "wifi-password";
-
-// MQTT Broker:
-const char *mqtt_server = "mqtt-server-address";
-const char *mqtt_username = "mqtt-username";
-const char *mqtt_password = "mqtt-password";
-
-// System ID
-String roomID = "your-system-id";
-
-#include "airSensors.h"
-```
-
 ## Water tester sketch
 ```
 // Network credentials
@@ -71,6 +54,23 @@ const char *mqtt_password = "mqtt-password";
 String roomID = "your-system-id";
 
 #include "waterTester.h"
+```
+
+## Air sensors sketch
+```
+// Network credentials
+const char* ssid = "wifi-ssid";
+const char* password = "wifi-password";
+
+// MQTT Broker:
+const char *mqtt_server = "mqtt-server-address";
+const char *mqtt_username = "mqtt-username";
+const char *mqtt_password = "mqtt-password";
+
+// System ID
+String roomID = "your-system-id";
+
+#include "airSensors.h"
 ```
 
 ## Services
