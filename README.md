@@ -132,7 +132,11 @@ https://{ipaddress}/webserial
 | Component | Command  | Explanation |
 | ------------- | ------------- | ------------- |
 | air sensor | restart | *restart component* |
-| ------------- | calibratesgp30 | *calibrate co2 sensor* |
+| air sensor | calibratesgp30 | *calibrate co2 sensor* |
+| main controller | restart | *restart component* |
+| water tester | restart | *restart component* |
+| doser one | restart | *restart component* |
+
 
 ## Components list
 
