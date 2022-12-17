@@ -3,7 +3,7 @@
   Author: Ground Creative 
 */
 
-#define _VERSION_ "1.1.1"
+#define _VERSION_ "1.2.0"
 #include "airSensorsDefaultConfig.h"
 #include <NetTools.h>
 #include "SSD1306Ascii.h"
@@ -18,6 +18,8 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 #include <WebSerial.h>
+#include <Wire.h>
+#include "Adafruit_SGP30.h"
 
 AsyncWebServer server(80);
 
@@ -25,6 +27,7 @@ DHT dht(DHT_PIN, DHT_TYPE);
 OneWire oneWire(DS18B20_PIN);
 DallasTemperature sensors(&oneWire);
 MQUnifiedsensor MQ135(BOARD, VOLTAGE_RESOLUTION, ADC_BIT_RESOLUTION, MQ135_PIN, MQ_TYPE);
+Adafruit_SGP30 sgp;
 SSD1306AsciiWire oled;
 
 // Component ID
@@ -37,14 +40,24 @@ String mqttClientID = roomID + "-" + componentID;
 
 float outTemp = 0.0, inTemp = 0.0, inHum = 0.0, inCo2 = 0, RO = 0;
 unsigned long previousMillis = 0, netPreviousMillis = 0, updateInterval = 10000; 
-unsigned int outTempSensorCountRetries = 0;
-bool wifiConnected = false, oledOn = true;
+unsigned int outTempSensorCountRetries = 0,restoredECO2Baseline = 0,restoredTVOCBaseline = 0, counter = 0;
+bool wifiConnected = false, mqttConnected = false, oledOn = true, nightMode = false;
 String wifiIP = "";
+
+uint32_t getAbsoluteHumidity(float temperature, float humidity) 
+{
+    // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
+    const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
+    const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
+    return absoluteHumidityScaled;
+}
 
 void recvMsg(uint8_t *data, size_t len)
 {
 	WebSerial.println("");
-	WebSerial.println("Received Data...");
+	WebSerial.println("Received data...");
+	Serial.println("");
+	Serial.println("Received WebSerial data...");
 	String d = "";
 	for(int i=0; i < len; i++)
 	{
@@ -53,8 +66,22 @@ void recvMsg(uint8_t *data, size_t len)
 	WebSerial.println(d);
 	if(d == "restart" || d == "RESTART")
 	{
+		Serial.print("Restarting");
+		WebSerial.print("Restarting");
+		delay(1000);
 		ESP.restart();
 	}
+	if(d == "calibratesgp30" || d == "CALIBRATESGP30")
+	{
+		Serial.println("Calibrating sgp30");
+		WebSerial.print("Calibrating sgp30");
+		EEPROM.put(addressECO2, 0); 
+		EEPROM.put(addressTVOC, 0);
+		EEPROM.commit();
+		delay(1000);
+		ESP.restart();
+	}
+	Serial.println(d.indexOf(':'));
 }
 
 void calibrateMQ135Sensor()
@@ -133,6 +160,32 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		EEPROM.write(oledFlashAddress, oledOn);
 		EEPROM.commit();
 	}
+	else if (String(topic) == roomID + "/air-sensors-night-mode")
+	{
+		nightMode = content.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+		}
+		EEPROM.write(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
+	}
 	else if (String(topic) == roomID + "/air-sensors-display-update-interval")
 	{
 		updateInterval = content.toInt();
@@ -147,6 +200,16 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	{
 		calibrateMQ135Sensor();
 	}
+	else if(String(topic) == roomID + "/" + componentID + "/calibrate-sgp30")
+	{
+		Serial.print("Calibrating sgp30");
+		WebSerial.print("Calibrating Sgp30");
+		EEPROM.put(addressECO2, 0); 
+		EEPROM.put(addressTVOC, 0);
+		EEPROM.commit();
+		delay(1000);
+		ESP.restart();
+	}
 }
 
 NetTools::MQTT mqtt(mqtt_server, mqtt_callback);
@@ -155,10 +218,12 @@ void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
 	WebSerial.println("Subscribing to mqtt messages");
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-night-mode").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-update-interval").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/calibrate-mq135").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/calibrate-sgp30").c_str()));
 }
 
 void netClientHandler( void * pvParameters )
@@ -175,7 +240,10 @@ void netClientHandler( void * pvParameters )
 			if (!wifiConnected)
 			{
 				network.connect();
-				digitalWrite(WIFI_LED_PIN, LOW);
+				if (!nightMode)
+				{
+					digitalWrite(WIFI_LED_PIN, LOW);
+				}
 				oled.clear();
 				if (oledOn)
 				{
@@ -197,7 +265,10 @@ void netClientHandler( void * pvParameters )
 					Serial.print('.');
 					delay(1000);
 				}
-				digitalWrite(WIFI_LED_PIN, LOW);
+				if (!nightMode)
+				{
+					digitalWrite(WIFI_LED_PIN, LOW);
+				}
 				oled.clear();
 				if (oledOn)
 				{
@@ -211,10 +282,15 @@ void netClientHandler( void * pvParameters )
 			if (!mqtt.isConnected())
 			{
 				digitalWrite(MQTT_LED_PIN, HIGH);
+				mqttConnected = false;
 				if (mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
 				{
+					mqttConnected = true;
 					mqttSubscribe(roomID);
-					digitalWrite(MQTT_LED_PIN, LOW);
+					if (!nightMode)
+					{
+						digitalWrite(MQTT_LED_PIN, LOW);
+					}
 					delay(1000);
 				}
 			}
@@ -227,18 +303,77 @@ void netClientHandler( void * pvParameters )
 
 void updateCo2Values()
 {
-	if (!USE_MQ135){ return; }
-	MQ135.update(); 				// Update data, the arduino will read the voltage from the analog pin
-	MQ135.setA(110.47); 			// Configure the equation to calculate CO2 concentration value
-	MQ135.setB(-2.862); 			// Configure the equation to calculate CO2 concentration value
-	float CO2 = MQ135.readSensor(); // Sensor will read PPM concentration using the model, a and b values set previously or from the setup
-	inCo2 = CO2 + co2BaseValue;
-	Serial.print("MQ135 CO2: ");
-	Serial.print(inCo2);
-	Serial.println();
-	WebSerial.print("MQ135 CO2: ");
-	WebSerial.print(inCo2);
-	WebSerial.println();
+	if (USE_MQ135)
+	{
+		MQ135.update(); 				// Update data, the arduino will read the voltage from the analog pin
+		MQ135.setA(110.47); 			// Configure the equation to calculate CO2 concentration value
+		MQ135.setB(-2.862); 			// Configure the equation to calculate CO2 concentration value
+		float CO2 = MQ135.readSensor(); // Sensor will read PPM concentration using the model, a and b values set previously or from the setup
+		inCo2 = CO2 + co2BaseValue;
+		Serial.print("MQ135 CO2: ");
+		Serial.print(inCo2);
+		Serial.println();
+		WebSerial.print("MQ135 CO2: "); WebSerial.print(inCo2); WebSerial.println();
+	}
+	if (USE_SGP30)
+	{
+		uint16_t eCO2Baseline;
+		uint16_t TVOCBaseline;
+		static unsigned long lastBaselineSaving = millis();
+		sgp.setHumidity(getAbsoluteHumidity(inTemp, inHum));
+		if (! sgp.IAQmeasure())
+		{
+			Serial.println("SGP30 Measurement failed");
+			WebSerial.println("SGP30 Measurement failed");
+			inCo2 = 0;
+			return;
+		}
+		inCo2 = sgp.eCO2;
+		Serial.print("TVOC "); Serial.print(sgp.TVOC); Serial.print(" ppb\t");
+		Serial.print("eCO2 "); Serial.print(sgp.eCO2); Serial.println(" ppm");
+		WebSerial.print("TVOC "); WebSerial.print(sgp.TVOC); WebSerial.print(" ppb\t");
+		WebSerial.print("eCO2 "); WebSerial.print(sgp.eCO2); WebSerial.println(" ppm");
+		if (! sgp.IAQmeasureRaw()) 
+		{
+			Serial.println("SGP30 Raw Measurement failed");
+			WebSerial.println("SGP30 Raw Measurement failed");
+			return;
+		}
+		Serial.print("Raw H2 "); Serial.print(sgp.rawH2); Serial.print(" \t");
+		Serial.print("Raw Ethanol "); Serial.print(sgp.rawEthanol); Serial.println("");
+		WebSerial.print("Raw H2 "); WebSerial.print(sgp.rawH2); WebSerial.print(" \t");
+		WebSerial.print("Raw Ethanol "); WebSerial.print(sgp.rawEthanol); WebSerial.println("");
+		//delay(1000);
+		counter++;
+		if (counter == 30) 
+		{
+			counter = 0;
+			if (! sgp.getIAQBaseline(&eCO2Baseline, &TVOCBaseline)) 
+			{
+				Serial.println("Failed to get sgp30 baseline readings");
+				WebSerial.println("Failed to get sgp30 baseline readings");
+				return;
+			}
+			Serial.print("****Baseline values: eCO2: 0x"); Serial.print(eCO2Baseline, HEX);
+			Serial.print(" & TVOC: 0x"); Serial.println(TVOCBaseline, HEX);
+			WebSerial.print("****Baseline values: eCO2: 0x"); WebSerial.print(eCO2Baseline);
+			WebSerial.print(" & TVOC: 0x"); WebSerial.println(TVOCBaseline);
+		}
+		if ((millis()-lastBaselineSaving)>baselineSavePeriod)
+		{
+			Serial.println("Saving sgp30 baseline");
+			Serial.print("eCO2 baseline: "); Serial.println(eCO2Baseline,HEX);
+			Serial.print("TVOC baseline: "); Serial.println(TVOCBaseline, HEX);
+			WebSerial.println("Saving sgp30 baseline");
+			WebSerial.print("eCO2 baseline: "); WebSerial.println(eCO2Baseline);
+			WebSerial.print("TVOC baseline: "); WebSerial.println(TVOCBaseline);
+			sgp.getIAQBaseline(&eCO2Baseline, &TVOCBaseline);
+			EEPROM.put(addressECO2, eCO2Baseline); 
+			EEPROM.put(addressTVOC, TVOCBaseline);
+			lastBaselineSaving = millis();
+			EEPROM.commit();
+		}
+	}
 }
 
 void updateDisplayValues()
@@ -391,6 +526,11 @@ void setup()
 		delay(1000);
 		oled.clear();
 	}
+	nightMode = EEPROM.read( nightModeFlashAddress );
+	if (!nightMode || nightMode > 1)
+	{
+		nightMode = 0;
+	}
 	xTaskCreatePinnedToCore
 	(
 		netClientHandler,     	/* Task function. */
@@ -424,13 +564,45 @@ void setup()
 			calibrateMQ135Sensor();
 		#endif
 		EEPROM.get(mq135ROFlashAddress, RO);
-		if ( isnan(RO) )
+		if (isnan(RO))
 		{
 			Serial.println("No RO found for co2 mq135 sensor, please calibrate");
 			WebSerial.println("No RO found for co2 mq135 sensor, please calibrate");
 			RO = 1.0;
 		}
 		MQ135.setR0(RO);
+	}
+	if (USE_SGP30)
+	{
+		EEPROM.get(addressECO2, restoredECO2Baseline);
+		EEPROM.get(addressTVOC, restoredTVOCBaseline); 
+		Serial.print("Restored eCO2 baseline: ");
+		Serial.println(restoredECO2Baseline,HEX);
+		Serial.print("Restored TVOC baseline: ");
+		Serial.println(restoredTVOCBaseline, HEX);
+		Serial.println("SGP30 test");
+		WebSerial.print("Restored eCO2 baseline: ");
+		WebSerial.println(restoredECO2Baseline);
+		WebSerial.print("Restored TVOC baseline: ");
+		WebSerial.println(restoredTVOCBaseline);
+		WebSerial.println("SGP30 test");
+		if (!sgp.begin())
+		{
+			Serial.println("SGP30 Sensor not found :(");
+			while (1);
+		}
+		Serial.print("Found SGP30 serial #");
+		Serial.print(sgp.serialnumber[0], HEX);
+		Serial.print(sgp.serialnumber[1], HEX);
+		Serial.println(sgp.serialnumber[2], HEX);
+		WebSerial.print("Found SGP30 serial #");
+		WebSerial.print(sgp.serialnumber[0]);
+		WebSerial.print(sgp.serialnumber[1]);
+		WebSerial.println(sgp.serialnumber[2]);
+		if (restoredECO2Baseline != 0) 
+		{
+			sgp.setIAQBaseline(restoredECO2Baseline, restoredTVOCBaseline);  
+		}
 	}
 }
 

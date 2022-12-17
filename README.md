@@ -129,6 +129,11 @@ https://{ipaddress}/update
 
 https://{ipaddress}/webserial
 
+| Component | Command  | Explanation |
+| ------------- | ------------- | ------------- |
+| air sensor | restart | *restart component* |
+| ------------- | calibratesgp30 | *calibrate co2 sensor* |
+
 ## Components list
 
 ### Main controller

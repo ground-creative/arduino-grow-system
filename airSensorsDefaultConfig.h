@@ -18,9 +18,13 @@
   const int oledFlashAddress = 20;
   const int updateIntervalFlashAddress = 30;
   const int mq135ROFlashAddress = 50;
+  const int addressECO2 = 70;  
+  const int addressTVOC = 90;
+  const int nightModeFlashAddress = 110;
   const int outTempSensorMaxRetries = 10;
   unsigned long checkConnectionInterval = 5000;
   unsigned long co2BaseValue = 400;
+  unsigned long baselineSavePeriod = 10800000; // 3h
   
 #endif
 
@@ -33,5 +37,9 @@
 #endif
 
 #ifndef USE_MQ135
-  #define USE_MQ135 1
+  #define USE_MQ135 0
+#endif
+
+#ifndef USE_SGP30
+  #define USE_SGP30 1
 #endif
