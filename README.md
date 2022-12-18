@@ -138,9 +138,6 @@ https://{ipaddress}/webserial
 ### Commands
 
 #### Air Sensors
-
-| Command  | Explanation |
-| ------------- | ------------- |
 | RESTART | *restart component* |
 | CALIBRATESGP30 | *calibrate co2 sensor* |
 | CALIBRATEMQ135 | *calibrate co2 sensor* |
