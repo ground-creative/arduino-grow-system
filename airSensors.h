@@ -282,7 +282,7 @@ void recvMsg(uint8_t *data, size_t len)
 	}
 }
 
-void netClientHandler( void * pvParameters )
+void netClientHandler(void * pvParameters)
 {
 	Serial.print("netClientHandler running on core "); Serial.println(xPortGetCoreID());
 	for (;;)
@@ -600,7 +600,7 @@ void setup()
 			"</i></b><br><br>Version: <b><i>" + String(_VERSION_) + 
 			"</i></b><br><br>WiFi status: <b><i>" + wifiStatus  + 
 			"</i></b><br><br>Mqtt status: <b><i>" + mqttStatus + "</i></b>");
-	} );
+	});
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 	WebSerial.begin(&server);
 	WebSerial.msgCallback(recvMsg);
