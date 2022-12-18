@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.0.1"
+#define _VERSION_ "1.0.2"
 #include "doserDefaultConfig.h"
 #include <NetTools.h>
 #include <Arduino.h>
@@ -12,38 +12,190 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 #include <WebSerial.h>
+#include <U8x8lib.h>
 
 AsyncWebServer server(80);
 
 TaskHandle_t netClient;
 NetTools::WIFI network(ssid, password);
 
+U8X8_SSD1306_128X64_NONAME_SW_I2C u8x8(/* clock=*/ 15, /* data=*/ 4, /* reset=*/ 16);
+
 String mqttClientID = roomID + "-" + componentID;
 
-bool wifiConnected = false;
+bool wifiConnected = false, mqttConnected = false, oledOn = true, nightMode = false;
 const int pumpOneFlashAddress = 0, pumpTwoFlashAddress = 10, pumpThreeFlashAddress = 20;
 const int pumpFourFlashAddress = 30, pumpFiveFlashAddress = 40, pumpSixFlashAddress = 50;
-int pumpOneCal = 600,pumpTwoCal = 600,pumpThreeCal = 600;  // 1 mil 600 milliseconds;
-int pumpFourCal = 600,pumpFiveCal = 600,pumpSixCal = 600;  // 1 mil 600 milliseconds;
-int pOneCal,pTwoCal,pThreeCal,pFourCal,pFiveCal,pSixCal;
+const int nightModeFlashAddress = 70, oledFlashAddress = 90;
+int pumpOneCal = 600, pumpTwoCal = 600, pumpThreeCal = 600;  // 1 mil 600 milliseconds;
+int pumpFourCal = 600, pumpFiveCal = 600, pumpSixCal = 600;  // 1 mil 600 milliseconds;
+int pOneCal, pTwoCal, pThreeCal, pFourCal, pFiveCal, pSixCal;
 int pumpOneRelayState = HIGH, pumpTwoRelayState = HIGH, pumpThreeRelayState = HIGH;
 int pumpFourRelayState = HIGH, pumpFiveRelayState = HIGH, pumpSixRelayState = HIGH;
-unsigned long previousMillis = 0; 
-unsigned long checkConnectionInterval = 5000;
+unsigned long previousMillis = 0, displayPreviousMillis= 0; 
+unsigned long checkConnectionInterval = 5000, updateInterval = 10000;
+String wifiIP = "";
 
 void recvMsg(uint8_t *data, size_t len)
 {
-	WebSerial.println("");
-	WebSerial.println("Received Data...");
+	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
+	Serial.println(""); Serial.println("Received WebSerial command...");
 	String d = "";
+	String v = "";
 	for(int i=0; i < len; i++)
 	{
 		d += char(data[i]);
 	}
+	d.toUpperCase();
 	WebSerial.println(d);
-	if(d == "restart" || d == "RESTART")
+	if ( d.indexOf(':') > -1 )
 	{
+		v = d.substring((d.indexOf(':')+1),d.length());
+		d = d.substring(0,d.indexOf(':'));
+	}
+	if(d == "RESTART")
+	{
+		Serial.print("Restarting");
+		WebSerial.print("Restarting");
+		delay(3000);
 		ESP.restart();
+	}
+	else if(d == "NIGHTMODE")
+	{
+		nightMode = v.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+		}
+		EEPROM.write(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
+	}
+	else if(d == "OLEDON")
+	{
+		oledOn = v.toInt();
+		if (oledOn)
+		{
+			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
+		}
+		else
+		{
+			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
+			u8x8.clearDisplay();
+		}
+		EEPROM.write(oledFlashAddress, oledOn);
+		EEPROM.commit();
+	}
+	else if(d == "GETCALVALUE")
+	{
+		int pump = v.toInt();
+		if ( pump == 1 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pOneCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pOneCal);
+		}
+		else if ( pump == 2 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pTwoCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pTwoCal);
+		}
+		else if ( pump == 3 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pThreeCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pThreeCal);
+		}
+		else if ( pump == 4 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pFourCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pFourCal);
+		}
+		else if ( pump == 5 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pFiveCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pFiveCal);
+		}
+		else if ( pump == 6 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pFiveCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pFiveCal);
+		}
+	}
+	else if(d == "CALVALUEPUMP1")
+	{
+		Serial.print("Setting calibration value for pump 1: ");  Serial.println(v.toInt()); 
+		WebSerial.print("Setting calibration value for pump 1: ");  WebSerial.println(v.toInt()); 
+		EEPROM.put(pumpOneFlashAddress, content.toInt());
+		EEPROM.commit();
+		pumpOneCal = content.toInt();
+	}
+	else if(d == "CALVALUEPUMP2")
+	{
+		Serial.print("Setting calibration value for pump 2: ");  Serial.println(v.toInt()); 
+		WebSerial.print("Setting calibration value for pump 2: ");  WebSerial.println(v.toInt()); 
+		EEPROM.put(pumpTwoFlashAddress, v.toInt());
+		EEPROM.commit();
+		pumpTwoCal = v.toInt();
+	}
+	else if(d == "CALVALUEPUMP3")
+	{
+		Serial.print("Setting calibration value for pump 3: ");  Serial.println(v.toInt()); 
+		WebSerial.print("Setting calibration value for pump 3: ");  WebSerial.println(v.toInt()); 
+		EEPROM.put(pumpThreeFlashAddress, v.toInt());
+		EEPROM.commit();
+		pumpThreeCal = v.toInt();
+	}
+	else if(d == "CALVALUEPUMP4")
+	{
+		Serial.print("Setting calibration value for pump 4: ");  Serial.println(v.toInt()); 
+		WebSerial.print("Setting calibration value for pump 4: ");  WebSerial.println(v.toInt()); 
+		EEPROM.put(pumpFourFlashAddress, v.toInt());
+		EEPROM.commit();
+		pumpFourCal = v.toInt();
+	}
+	else if(d == "CALVALUEPUMP5")
+	{
+		Serial.print("Setting calibration value for pump 5: ");  Serial.println(v.toInt()); 
+		WebSerial.print("Setting calibration value for pump 5: ");  WebSerial.println(v.toInt()); 
+		EEPROM.put(pumpFiveFlashAddress, v.toInt());
+		EEPROM.commit();
+		pumpFiveCal = v.toInt();
+	}
+	else if(d == "CALVALUEPUMP6")
+	{
+		Serial.print("Setting calibration value for pump 6: ");  Serial.println(v.toInt()); 
+		WebSerial.print("Setting calibration value for pump 6: ");  WebSerial.println(v.toInt()); 
+		EEPROM.put(pumpSixFlashAddress, v.toInt());
+		EEPROM.commit();
+		pumpSixCal = v.toInt();		
 	}
 }
 
@@ -64,6 +216,49 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	if (String(topic) == roomID + "/" + componentID + "-restart")
 	{
 		ESP.restart();
+	}
+	else if (String(topic) == roomID + "/" + componentID + "-display-backlight")
+	{
+		oledOn = content.toInt();
+		if (oledOn)
+		{
+			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
+		}
+		else
+		{
+			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
+			u8x8.clearDisplay();
+		}
+		EEPROM.write(oledFlashAddress, oledOn);
+		EEPROM.commit();
+	}
+	else if (String(topic) == roomID + "/" + componentID + "-night-mode")
+	{
+		nightMode = content.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+		}
+		EEPROM.write(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
 	}
 	else if (String(topic) == roomID + "/" + componentID + "/p-one")
 	{
@@ -162,13 +357,14 @@ NetTools::MQTT mqtt(mqtt_server, mqtt_callback);
 void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-night-mode").c_str()));
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-one").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-two").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-three").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-four").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-five").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-six").c_str()));
-	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-one-calibrate").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-two-calibrate").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-three-calibrate").c_str()));
@@ -210,26 +406,46 @@ void netClientHandler( void * pvParameters )
 			{
 				network.connect();
 				digitalWrite(WIFI_LED_PIN, LOW);
+				//u8x8.clearDisplay();
+				if (oledOn)
+				{
+					//u8x8.drawString(0, 0, "Connected to WiFi");
+				}
+				wifiIP = network.localAddress().toString();
 			}
 			else if (network.status() != WL_CONNECTED)
 			{
 				digitalWrite(WIFI_LED_PIN, HIGH);
 				digitalWrite(MQTT_LED_PIN, HIGH);
+				wifiIP = "";
 				network.check();
 				while (network.status( ) != WL_CONNECTED)
 				{
 					Serial.print('.');
 					delay(1000);
 				}
-				digitalWrite(WIFI_LED_PIN, LOW);
+				if (!nightMode)
+				{
+					digitalWrite(WIFI_LED_PIN, LOW);
+				}
+				//u8x8.clearDisplay();
+				if (oledOn)
+				{
+					//u8x8.drawString(0, 0, "Connected to WiFi");
+				}
+				wifiIP = network.localAddress().toString();
 			}
 			if (!mqtt.isConnected())
 			{
 				digitalWrite(MQTT_LED_PIN, HIGH);
 				if (mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
 				{
+					mqttConnected = true;
 					mqttSubscribe(roomID);
-					digitalWrite(MQTT_LED_PIN, LOW);
+					if (!nightMode)
+					{
+						digitalWrite(MQTT_LED_PIN, LOW);
+					}
 					delay(1000);
 				}
 			}
@@ -300,6 +516,18 @@ void setPinsInitStatus()
 	pinMode(PUMP_SIX_BTN_PIN, INPUT_PULLUP);
 }
 
+void updateDisplayValues()
+{
+	unsigned long currentMillis = millis();
+	if ( currentMillis - displayPreviousMillis >= updateInterval ) 
+	{
+		displayPreviousMillis = currentMillis;
+		u8x8.clearDisplay();
+		u8x8.drawString(0, 0, wifiIP.c_str());
+	}
+}
+
+
 void setup() 
 {
 	Serial.begin(9600);
@@ -307,6 +535,17 @@ void setup()
 	Serial.println("Component started with config " + roomID +  ":" + componentID);
 	setPinsInitStatus();
 	setInitParams();
+	u8x8.begin();
+	u8x8.setFont(u8x8_font_chroma48medium8_r);
+	
+	u8x8.drawString(0, 0, "Connected");
+	
+	oledOn = EEPROM.read( oledFlashAddress );
+	nightMode = EEPROM.read( nightModeFlashAddress );
+	if (!nightMode || nightMode > 1)
+	{
+		nightMode = 0;
+	}
 	xTaskCreatePinnedToCore
 	(
 		netClientHandler,   	/* Task function. */
@@ -339,4 +578,5 @@ void loop()
 	pumpFourRelayState = changeRelayStateManually(PUMP_FOUR_BTN_PIN,PUMP_FOUR_RELAY_PIN, pumpFourRelayState);
 	pumpFiveRelayState = changeRelayStateManually(PUMP_FIVE_BTN_PIN,PUMP_FIVE_RELAY_PIN, pumpFiveRelayState);
 	pumpSixRelayState = changeRelayStateManually(PUMP_SIX_BTN_PIN,PUMP_SIX_RELAY_PIN, pumpSixRelayState);
+	updateDisplayValues();
 }

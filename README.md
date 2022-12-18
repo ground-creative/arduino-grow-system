@@ -82,7 +82,7 @@ mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester|doser-one
 mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester)-display-backlight" -m "1|0" -u "user" -P "pass"
 
 // Night mode on/off (turns on/off notification led lights)
-mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester|doser-one)-night-mode" -m "1|0" -u "user" -P "pass"
+mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester|doser-on|doser-twoe)-night-mode" -m "1|0" -u "user" -P "pass"
 
 // Device network status
 mosquitto_sub -t "device-status/{systemID}-(air-sensors|main-controller|water-tester|doser-one|doser-two)" -u "user" -P "pass"
@@ -159,6 +159,10 @@ https://{ipaddress}/webserial
 | Command  | Explanation |
 | ------------- | ------------- |
 | RESTART | *restart component* |
+| GETCALVALUE:[1-6] | *show calibration value* |
+| CALVALUEPUMP[1-6]:{value}| *set calibration value* |
+| NIGHTMODE:(1\|0) | *turn on/off night mode* |
+| OLEDON:(1\|0) | *turn on/off oled display* |
 
 #### Water tester
 | Command  | Explanation |

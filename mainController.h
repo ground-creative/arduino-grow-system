@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.5.1"
+#define _VERSION_ "1.5.2"
 #include "mainControllerDefaultConfig.h"
 #include <NetTools.h>
 #include <Preferences.h>
@@ -278,8 +278,8 @@ void recvMsg(uint8_t *data, size_t len)
 		{
 			Serial.println("Turning on night mode");
 			WebSerial.println("Turning on night mode");
-			digitalWrite(WIFI_LED_PIN, LOW);
-			digitalWrite(MQTT_LED_PIN, LOW);
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
 		}
 		else
 		{
@@ -287,11 +287,11 @@ void recvMsg(uint8_t *data, size_t len)
 			WebSerial.println("Turning off night mode");
 			if (wifiConnected)
 			{				
-				digitalWrite(WIFI_LED_PIN, HIGH);
+				digitalWrite(WIFI_LED_PIN, LOW);
 			}
 			if (mqttConnected)
 			{	
-				digitalWrite(MQTT_LED_PIN, HIGH);
+				digitalWrite(MQTT_LED_PIN, LOW);
 			}
 		}
 		preferences.putInt("nightmode", nightMode);
