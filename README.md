@@ -161,6 +161,7 @@ https://{ipaddress}/webserial
 | RESTART | *restart component* |
 | GETCALVALUE:[1-6] | *show calibration value* |
 | CALVALUEPUMP[1-6]:{value}| *set calibration value* |
+| OPENPUMP[1-6]:{value}| *open pump* |
 | NIGHTMODE:(1\|0) | *turn on/off night mode* |
 | OLEDON:(1\|0) | *turn on/off oled display* |
 

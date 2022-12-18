@@ -151,51 +151,123 @@ void recvMsg(uint8_t *data, size_t len)
 	}
 	else if(d == "CALVALUEPUMP1")
 	{
-		Serial.print("Setting calibration value for pump 1: ");  Serial.println(v.toInt()); 
-		WebSerial.print("Setting calibration value for pump 1: ");  WebSerial.println(v.toInt()); 
-		EEPROM.put(pumpOneFlashAddress, content.toInt());
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 1: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 1: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpOneFlashAddress, pump);
 		EEPROM.commit();
-		pumpOneCal = content.toInt();
+		pumpOneCal = pump;
 	}
 	else if(d == "CALVALUEPUMP2")
 	{
-		Serial.print("Setting calibration value for pump 2: ");  Serial.println(v.toInt()); 
-		WebSerial.print("Setting calibration value for pump 2: ");  WebSerial.println(v.toInt()); 
-		EEPROM.put(pumpTwoFlashAddress, v.toInt());
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 2: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 2: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpTwoFlashAddress, pump);
 		EEPROM.commit();
-		pumpTwoCal = v.toInt();
+		pumpTwoCal = pump;
 	}
 	else if(d == "CALVALUEPUMP3")
 	{
-		Serial.print("Setting calibration value for pump 3: ");  Serial.println(v.toInt()); 
-		WebSerial.print("Setting calibration value for pump 3: ");  WebSerial.println(v.toInt()); 
-		EEPROM.put(pumpThreeFlashAddress, v.toInt());
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 3: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 3: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpThreeFlashAddress, pump);
 		EEPROM.commit();
-		pumpThreeCal = v.toInt();
+		pumpThreeCal = pump;
 	}
 	else if(d == "CALVALUEPUMP4")
 	{
-		Serial.print("Setting calibration value for pump 4: ");  Serial.println(v.toInt()); 
-		WebSerial.print("Setting calibration value for pump 4: ");  WebSerial.println(v.toInt()); 
-		EEPROM.put(pumpFourFlashAddress, v.toInt());
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 4: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 4: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpFourFlashAddress, pump);
 		EEPROM.commit();
-		pumpFourCal = v.toInt();
+		pumpFourCal = pump;
 	}
 	else if(d == "CALVALUEPUMP5")
 	{
-		Serial.print("Setting calibration value for pump 5: ");  Serial.println(v.toInt()); 
-		WebSerial.print("Setting calibration value for pump 5: ");  WebSerial.println(v.toInt()); 
-		EEPROM.put(pumpFiveFlashAddress, v.toInt());
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 5: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 5: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpFiveFlashAddress, pump);
 		EEPROM.commit();
-		pumpFiveCal = v.toInt();
+		pumpFiveCal = pump;
 	}
 	else if(d == "CALVALUEPUMP6")
 	{
-		Serial.print("Setting calibration value for pump 6: ");  Serial.println(v.toInt()); 
-		WebSerial.print("Setting calibration value for pump 6: ");  WebSerial.println(v.toInt()); 
-		EEPROM.put(pumpSixFlashAddress, v.toInt());
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 6: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 6: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpSixFlashAddress, pump);
 		EEPROM.commit();
-		pumpSixCal = v.toInt();		
+		pumpSixCal = pump;		
+	}
+	else if (d == "OPENPUMP1")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpOneCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpOneCal);
+		digitalWrite(PUMP_ONE_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpOneCal);
+		digitalWrite(PUMP_ONE_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP2")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpTwoCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpTwoCal);
+		digitalWrite(PUMP_TWO_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpTwoCal);
+		digitalWrite(PUMP_TWO_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP3")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpThreeCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpThreeCal);
+		digitalWrite(PUMP_THREE_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpThreeCal);
+		digitalWrite(PUMP_THREE_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP4")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpFourCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpFourCal);
+		digitalWrite(PUMP_FOUR_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpFourCal);
+		digitalWrite(PUMP_FOUR_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP5")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpFiveCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpFiveCal);
+		digitalWrite(PUMP_FIVE_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpFiveCal);
+		digitalWrite(PUMP_FIVE_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP6")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpSixCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpSixCal);
+		digitalWrite(PUMP_SIX_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpSixCal);
+		digitalWrite(PUMP_SIX_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
 	}
 }
 
@@ -535,12 +607,10 @@ void setup()
 	Serial.println("Component started with config " + roomID +  ":" + componentID);
 	setPinsInitStatus();
 	setInitParams();
-	u8x8.begin();
-	u8x8.setFont(u8x8_font_chroma48medium8_r);
-	
-	u8x8.drawString(0, 0, "Connected");
-	
-	oledOn = EEPROM.read( oledFlashAddress );
+	//u8x8.begin();
+	//u8x8.setFont(u8x8_font_chroma48medium8_r);
+	//u8x8.drawString(0, 0, "Connected");
+	//oledOn = EEPROM.read( oledFlashAddress );
 	nightMode = EEPROM.read( nightModeFlashAddress );
 	if (!nightMode || nightMode > 1)
 	{
@@ -578,5 +648,5 @@ void loop()
 	pumpFourRelayState = changeRelayStateManually(PUMP_FOUR_BTN_PIN,PUMP_FOUR_RELAY_PIN, pumpFourRelayState);
 	pumpFiveRelayState = changeRelayStateManually(PUMP_FIVE_BTN_PIN,PUMP_FIVE_RELAY_PIN, pumpFiveRelayState);
 	pumpSixRelayState = changeRelayStateManually(PUMP_SIX_BTN_PIN,PUMP_SIX_RELAY_PIN, pumpSixRelayState);
-	updateDisplayValues();
+	//updateDisplayValues();
 }
