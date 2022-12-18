@@ -143,6 +143,17 @@ https://{ipaddress}/webserial
 | Command  | Explanation |
 | ------------- | ------------- |
 | RESTART | *restart component* |
+| NIGHTMODE:(1\|0) | *turn on/off night mode* |
+| BACKLIGHT:(1\|0) | *turn on/off lcd display* |
+| UPDATEINTERVAL:{value} | *update display interval* |
+| WATERVALVE:(1\|0) | *turn on/off solenoid valve* |
+| DRAINPUMP:(1\|0) | *turn on/off drain pump* |
+| MIXINGPUMP:(1\|0) | *turn on/off mixing pump* |
+| EXTRACTOR:(1\|0) | *turn on/off extractor* |
+| LIGHTS:(1\|0) | *turn on/off lights* |
+| FEEDINGPUMP:(1\|0) | *turn on/off feeding pump* |
+| FAN:(1\|0) | *turn on/off fan* |
+| AIRCO:(1\|0) | *turn on/off airco* |
 
 #### Doser
 | Command  | Explanation |
@@ -153,16 +164,21 @@ https://{ipaddress}/webserial
 | Command  | Explanation |
 | ------------- | ------------- |
 | RESTART | *restart component* |
+| NIGHTMODE:(1\|0) | *turn on/off night mode* |
+| OLEDON:(1\|0) | *turn on/off oled display* |
+| UPDATEINTERVAL:{value} | *update sensors interval* |
+| CALTDS:{value} | *calibrate TDS sensor (needs restart)* |
+| CALPH | *calibrate PH sensor (needs restart)* |
 
 #### Air sensors
 | Command  | Explanation |
 | ------------- | ------------- |
 | RESTART | *restart component* |
-| CALIBRATESGP30 | *calibrate co2 sensor* |
-| CALIBRATEMQ135 | *calibrate co2 sensor* |
 | NIGHTMODE:(1\|0) | *turn on/off night mode* |
 | OLEDON:(1\|0) | *turn on/off oled display* |
 | UPDATEINTERVAL:{value} | *update sensors interval* |
+| CALIBRATESGP30 | *calibrate co2 sensor* |
+| CALIBRATEMQ135 | *calibrate co2 sensor* |
 
 ## Components list
 

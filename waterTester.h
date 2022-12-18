@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.1.2"
+#define _VERSION_ "1.2.0"
 #include "waterTesterDefaultConfig.h"
 #include <NetTools.h>
 #include <OneWire.h>
@@ -19,6 +19,8 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 #include <WebSerial.h>
+
+#define EEPROM_write(address, p) {int i = 0; byte *pp = (byte*)&(p);for(; i < sizeof(p); i++) EEPROM.write(address+i, pp[i]);}
 
 AsyncWebServer server(80);
 
@@ -40,22 +42,165 @@ DallasTemperature sensors(&oneWire);
 float voltage, phValue = 0.0, tdsValue = 0, waterTemp = 0.0, ecValue = 0.0;
 unsigned int waterTempSensorCountRetries = 0;
 unsigned long previousMillis = 0, netPreviousMillis = 0, updateInterval = 10000; 
-bool wifiConnected = false, oledOn = true;
+bool wifiConnected = false, mqttConnected = false, oledOn = true, nightMode = false;
 String wifiIP = "";
 
 void recvMsg(uint8_t *data, size_t len)
 {
-	WebSerial.println("");
-	WebSerial.println("Received Data...");
+	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
+	Serial.println(""); Serial.println("Received WebSerial command...");
 	String d = "";
+	String v = "";
 	for(int i=0; i < len; i++)
 	{
 		d += char(data[i]);
 	}
+	d.toUpperCase();
 	WebSerial.println(d);
-	if(d == "restart" || d == "RESTART")
+	if ( d.indexOf(':') > -1 )
 	{
+		v = d.substring((d.indexOf(':')+1),d.length());
+		d = d.substring(0,d.indexOf(':'));
+	}
+	if(d == "RESTART")
+	{
+		Serial.print("Restarting");
+		WebSerial.print("Restarting");
+		delay(3000);
 		ESP.restart();
+	}
+	else if(d == "UPDATEINTERVAL")
+	{
+		updateInterval = v.toInt();
+		Serial.print("Setting sensors update interval to ");	Serial.print(updateInterval);
+		WebSerial.print("Setting sensors update interval to "); WebSerial.print(String(updateInterval));
+		EEPROM.put(updateIntervalFlashAddress, updateInterval);
+		EEPROM.commit();
+	}
+	else if(d == "NIGHTMODE")
+	{
+		nightMode = v.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+		}
+		EEPROM.write(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
+	}
+	else if(d == "OLEDON")
+	{
+		oledOn = v.toInt();
+		if (oledOn)
+		{
+			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
+		}
+		else
+		{
+			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
+			oled.clear();
+		}
+		EEPROM.write(oledFlashAddress, oledOn);
+		EEPROM.commit();
+	}
+	else if (d == "CALTDS")
+	{
+		float aref = (ESPVOLTAGE/1000);
+		float adcRange = ESPADC;
+		float analogValue = analogRead(TDS_PIN);
+		float voltage = analogValue/adcRange*aref;
+		float rawECsolution = v.toInt()/(float)(TdsFactor);
+		rawECsolution = rawECsolution*(1.0+0.02*(waterTemp-25.0));
+		float KValueTemp = rawECsolution/(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage);  //calibrate in the  buffer solution, such as 707ppm(1413us/cm)@25^c
+		Serial.println("Calibrating TDS sensor");
+		Serial.print("rawECsolution: "); Serial.println(rawECsolution);
+		Serial.print("Voltage: "); Serial.println(voltage);
+		Serial.print("Analog value: "); Serial.print(analogValue);
+		Serial.println("KValueTemp: "); Serial.println(KValueTemp);
+		WebSerial.println("Calibrating TDS sensor");
+		WebSerial.print("rawECsolution: "); WebSerial.println(rawECsolution);
+		WebSerial.print("Voltage: "); WebSerial.println(voltage);
+		WebSerial.print("Analog value: "); WebSerial.print(analogValue);
+		WebSerial.println("KValueTemp: "); WebSerial.println(KValueTemp);
+		if((rawECsolution>0) && (rawECsolution<2000) && (KValueTemp>0.25) && (KValueTemp<4.0))
+		{
+			Serial.println();
+			Serial.print(">>>Confirm Successful, K: ");
+			Serial.print(KValueTemp);
+			Serial.println(" Saving kValue in memory. Restart for changes to take effect<<<");
+			WebSerial.println();
+			WebSerial.print(">>>Confirm Successful, K: ");
+			WebSerial.print(KValueTemp);
+			WebSerial.println(" Saving kValue in memory. Restart for changes to take effect<<<");
+			float kValue = KValueTemp;
+			EEPROM_write(tdsFlashAddress, kValue); 
+			EEPROM.commit();   
+			//delay(5000);
+			//ESP.restart();
+		}
+		else
+		{
+			Serial.println();
+			Serial.println(">>>Failed to calibrate TDS sensor, try again<<<");
+			Serial.println();
+			WebSerial.println();
+			WebSerial.println(">>>Failed to calibrate TDS sensor, try again<<<");
+			WebSerial.println();
+		} 
+	}
+	else if (d == "CALPH")
+	{
+		Serial.println("Calibrating PH sensor");
+		WebSerial.println("Calibrating PH sensor");
+		float voltage = analogRead(PH_PIN) / ESPADC * ESPVOLTAGE; // read the voltage
+		if ((voltage > PH_8_VOLTAGE) && (voltage < PH_6_VOLTAGE))
+		{ // buffer solution:7.0
+			Serial.println();
+			Serial.print(">>>Buffer Solution: 7.0");
+			Serial.println(" Saving neutralVoltage in memory. Restart for changes to take effect<<<");
+			WebSerial.println();
+			WebSerial.print(">>>Buffer Solution: 7.0");
+			WebSerial.println(" Saving neutralVoltage in memory. Restart for changes to take effect<<<");
+			float neutralVoltage = voltage;
+			EEPROM.writeFloat(PHVALUEADDR, neutralVoltage);
+			EEPROM.commit();
+			Serial.println();
+		}
+		else if ((voltage > PH_5_VOLTAGE) && (voltage < PH_3_VOLTAGE))
+		{ //buffer solution:4.0
+			Serial.println();
+			Serial.print(">>>Buffer Solution:4.0");
+			Serial.println(" Saving acidVoltage in memory. Restart for changes to take effect<<<");
+			WebSerial.println();
+			WebSerial.print(">>>Buffer Solution:4.0");
+			WebSerial.println(" Saving acidVoltage in memory. Restart for changes to take effect<<<");
+			float acidVoltage = voltage;
+			EEPROM.writeFloat(PHVALUEADDR + sizeof(float), acidVoltage);
+			EEPROM.commit();
+			Serial.println();
+		}
+		else
+		{
+			Serial.println(); Serial.print(">>>Buffer Solution Error Try Again<<<"); Serial.println(); // not buffer solution or faulty operation
+			WebSerial.println(); WebSerial.print(">>>Buffer Solution Error Try Again<<<"); WebSerial.println(); // not buffer solution or faulty operation
+		}
 	}
 }
 
@@ -116,6 +261,7 @@ void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
 	WebSerial.println("Subscribing to mqtt messages");
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-night-mode").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-update-interval").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
@@ -123,8 +269,7 @@ void mqttSubscribe(const String& roomID)
 
 void netClientHandler( void * pvParameters )
 {
-	Serial.print("netClientHandler running on core ");
-	Serial.println(xPortGetCoreID());
+	Serial.print("netClientHandler running on core "); Serial.println(xPortGetCoreID());
 	for (;;)
 	{
 		unsigned long currentMillis = millis();
@@ -135,7 +280,10 @@ void netClientHandler( void * pvParameters )
 			if (!wifiConnected)
 			{
 				network.connect();
-				digitalWrite(WIFI_LED_PIN, LOW);
+				if (!nightMode)
+				{
+					digitalWrite(WIFI_LED_PIN, LOW);
+				}
 				oled.clear();
 				if (oledOn)
 				{
@@ -157,7 +305,10 @@ void netClientHandler( void * pvParameters )
 					Serial.print('.');
 					delay(1000);
 				}
-				digitalWrite(WIFI_LED_PIN, LOW);
+				if (!nightMode)
+				{
+					digitalWrite(WIFI_LED_PIN, LOW);
+				}
 				oled.clear();
 				if (oledOn)
 				{
@@ -168,13 +319,18 @@ void netClientHandler( void * pvParameters )
 				}
 				wifiIP = network.localAddress().toString();
 			}
-		      if (!mqtt.isConnected())
-		      {
+			if (!mqtt.isConnected())
+			{
 				digitalWrite(MQTT_LED_PIN, HIGH);
+				mqttConnected = false;
 				if (mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
 				{
+					mqttConnected = true;
 					mqttSubscribe(roomID);
-					digitalWrite(MQTT_LED_PIN, LOW);
+					if (!nightMode)
+					{
+						digitalWrite(MQTT_LED_PIN, LOW);
+					}
 					delay(1000);
 				}
 			}
@@ -336,13 +492,19 @@ void setup()
 		delay(1000);
 		oled.clear();
 	}
+	nightMode = EEPROM.read( nightModeFlashAddress );
+	if (!nightMode || nightMode > 1)
+	{
+		nightMode = 0;
+	}
 	if (USE_TEMP){ sensors.begin( ); }
 	if (USE_TDS)
 	{
 		gravityTds.setPin(TDS_PIN);
 		gravityTds.setAref(ESPVOLTAGE/1000);
 		gravityTds.setAdcRange(ESPADC);
-		gravityTds.begin();  //initialization
+		gravityTds.setKvalueAddress(tdsFlashAddress);
+		gravityTds.begin();  // initialization
 	}
 	if (USE_PH){ ph.begin(); }
 	xTaskCreatePinnedToCore
@@ -358,7 +520,21 @@ void setup()
 	delay(500); 
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
 	{
-		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+		String wifiStatus = "disconnected";
+		if (wifiConnected)
+		{
+			wifiStatus = "connected";
+		}
+		String mqttStatus = "disconnected";
+		if (mqttConnected)
+		{
+			mqttStatus = "connected";
+		}		
+		request->send(200, "text/html", "Room ID: <b><i>" + roomID + 
+			"</i></b><br><br>Component ID: <b><i>" +  componentID + 
+			"</i></b><br><br>Version: <b><i>" + String(_VERSION_) + 
+			"</i></b><br><br>WiFi status: <b><i>" + wifiStatus  + 
+			"</i></b><br><br>Mqtt status: <b><i>" + mqttStatus + "</i></b>");
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 	WebSerial.begin(&server);

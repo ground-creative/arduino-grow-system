@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.4.2"
+#define _VERSION_ "1.5.1"
 #include "mainControllerDefaultConfig.h"
 #include <NetTools.h>
 #include <Preferences.h>
@@ -35,34 +35,7 @@ int lightsRelayState = HIGH, feedingPumpRelayState = HIGH, fanRelayState = HIGH,
 int resetButtonState = HIGH; 
 long lastDebounceTime = 0, debounceDelay = 200;
 unsigned long previousMillis = 0, netPreviousMillis = 0, updateInterval;
-bool wifiConnected = false, backlightOn;
-
-void recvMsg(uint8_t *data, size_t len)
-{
-	WebSerial.println("");
-	WebSerial.println("Received Data...");
-	String d = "";
-	for(int i=0; i < len; i++)
-	{
-		d += char(data[i]);
-	}
-	WebSerial.println(d);
-	if(d == "restart" || d == "RESTART")
-	{
-		ESP.restart();
-	}
-}
-
-boolean debounceButton(boolean state, const int pin)
-{
-	boolean stateNow = digitalRead(pin);
-	if(state != stateNow)
-	{
-		delay(50);
-		stateNow = digitalRead(pin);
-	}
-	return stateNow;
-}
+bool wifiConnected = false, mqttConnected = false, backlightOn, nightMode = false;
 
 void changeRelayState(int value, int relayPin, const char* prefKey)
 {
@@ -82,6 +55,17 @@ void changeRelayState(int value, int relayPin, const char* prefKey)
 		digitalWrite(relayPin, HIGH);
 		preferences.putInt(prefKey, 1);
 	}    
+}
+
+boolean debounceButton(boolean state, const int pin)
+{
+	boolean stateNow = digitalRead(pin);
+	if(state != stateNow)
+	{
+		delay(50);
+		stateNow = digitalRead(pin);
+	}
+	return stateNow;
 }
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
@@ -225,14 +209,157 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	{
 		changeRelayState(content.toInt(), AIRCO_RELAY_PIN, "airco");
 	}
+	else if (String(topic) == roomID + "/main-controller-night-mode")
+	{
+		nightMode = content.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+		}
+		preferences.putInt("nightmode", nightMode);
+	}
 }
 
 NetTools::MQTT mqtt(mqtt_server, mqtt_callback);
+
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
+	Serial.println(""); Serial.println("Received WebSerial command...");
+	String d = "";
+	String v = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	d.toUpperCase();
+	WebSerial.println(d);
+	if (d.indexOf(':') > -1)
+	{
+		v = d.substring((d.indexOf(':')+1),d.length());
+		d = d.substring(0,d.indexOf(':'));
+	}
+	if(d == "RESTART")
+	{
+		Serial.print("Restarting");
+		WebSerial.print("Restarting");
+		delay(3000);
+		ESP.restart();
+	}
+	else if(d == "UPDATEINTERVAL")
+	{
+		updateInterval = v.toInt();
+		Serial.print("Setting display update interval to ");
+		Serial.print(updateInterval);
+		WebSerial.print("Setting display update interval to ");
+		WebSerial.print(String(updateInterval));
+		preferences.putUInt("update-interval", updateInterval);
+	}
+	else if(d == "NIGHTMODE")
+	{
+		nightMode = v.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, LOW);
+			digitalWrite(MQTT_LED_PIN, LOW);
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, HIGH);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, HIGH);
+			}
+		}
+		preferences.putInt("nightmode", nightMode);
+	}
+	else if (d == "BACKLIGHT")
+	{
+		backlightOn = v.toInt();
+		if (backlightOn)
+		{
+			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
+			lcd.backlight();
+		}
+		else
+		{
+			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
+			lcd.noBacklight();
+		}
+		preferences.putInt("backlight-on", backlightOn);
+	}
+	else if (d == "WATERVALVE")
+	{
+		changeRelayState(v.toInt(), SOLENOID_VALVE_RELAY_PIN, "solenoid-valve");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/sv-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+	else if (d == "DRAINPUMP")
+	{
+		changeRelayState(v.toInt(), DRAIN_PUMP_RELAY_PIN, "drain-pump");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/dp-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+	else if (d == "MIXINGPUMP")
+	{
+		changeRelayState(v.toInt(), MIXING_PUMP_RELAY_PIN, "mixing-pump");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/mp-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+	else if (d == "EXTRACTOR")
+	{
+		changeRelayState(v.toInt(), EXTRACTOR_RELAY_PIN, "extractor");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/ex-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+	else if (d == "LIGHTS")
+	{
+		changeRelayState(v.toInt(), LIGHTS_RELAY_PIN, "lights");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/li-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+	else if (d == "FEEDINGPUMP")
+	{
+		changeRelayState(v.toInt(), FEEDING_PUMP_RELAY_PIN, "feeding-pump");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/fp-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+	else if (d == "FAN")
+	{
+		changeRelayState(v.toInt(), FAN_RELAY_PIN, "fan");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/fa-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+	else if (d == "AIRCO")
+	{
+		changeRelayState(v.toInt(), AIRCO_RELAY_PIN, "airco");
+		mqtt.publish(const_cast<char*>(String("m/" + roomID + "/ai-btn").c_str()), const_cast<char*>(String("LOW" == (v.toInt() ? "LOW" : "HIGH")).c_str()));
+	}
+}
 
 void mqttSubscribe(const String& roomID)
 {
 	Serial.println("Subscribing to mqtt messages");
 	WebSerial.println("Subscribing to mqtt messages");
+	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-night-mode").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-display-backlight").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/water-tester").c_str()));
@@ -374,8 +501,7 @@ void lcdBacklightBtn()
 
 void netClientHandler( void * pvParameters )
 {
-	Serial.print("netClientHandler running on core ");
-	Serial.println(xPortGetCoreID());
+	Serial.print("netClientHandler running on core "); Serial.println(xPortGetCoreID());
 	for (;;)
 	{
 		unsigned long currentMillis = millis();
@@ -386,7 +512,10 @@ void netClientHandler( void * pvParameters )
 			if (!wifiConnected)
 			{
 				network.connect();
-				digitalWrite(WIFI_LED_PIN, HIGH);
+				if (!nightMode)
+				{
+					digitalWrite(WIFI_LED_PIN, HIGH);
+				}
 				lcd.clear();
 				lcd.setCursor(0, 0);
 				lcd.print("Connected to WiFi");
@@ -405,7 +534,10 @@ void netClientHandler( void * pvParameters )
 					Serial.print('.');
 					delay(1000);
 				}
-				digitalWrite(WIFI_LED_PIN, HIGH);
+				if (!nightMode)
+				{
+					digitalWrite(WIFI_LED_PIN, HIGH);
+				}
 				lcd.clear();
 				lcd.setCursor(0, 0);
 				lcd.print("Connected to WiFi");
@@ -417,10 +549,15 @@ void netClientHandler( void * pvParameters )
 			if (!mqtt.isConnected())
 			{
 				digitalWrite(MQTT_LED_PIN, LOW);
+				mqttConnected = false;
 				if (mqtt.connect(mqttClientID, mqtt_username, mqtt_password))
 				{
+					mqttConnected = true;
 					mqttSubscribe(roomID);
-					digitalWrite(MQTT_LED_PIN, HIGH);
+					if (!nightMode)
+					{
+						digitalWrite(MQTT_LED_PIN, HIGH);
+					}
 					delay(1000);
 				}
 			}
@@ -512,6 +649,7 @@ void setup()
 	{
 		lcd.noBacklight();
 	}
+	nightMode = preferences.getInt("nightmode", 0);
 	xTaskCreatePinnedToCore
 	(
 		netClientHandler,   	/* Task function. */
@@ -525,7 +663,21 @@ void setup()
 	delay(500); 
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
 	{
-		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_));
+		String wifiStatus = "disconnected";
+		if (wifiConnected)
+		{
+			wifiStatus = "connected";
+		}
+		String mqttStatus = "disconnected";
+		if (mqttConnected)
+		{
+			mqttStatus = "connected";
+		}		
+		request->send(200, "text/html", "Room ID: <b><i>" + roomID + 
+			"</i></b><br><br>Component ID: <b><i>" +  componentID + 
+			"</i></b><br><br>Version: <b><i>" + String(_VERSION_) + 
+			"</i></b><br><br>WiFi status: <b><i>" + wifiStatus  + 
+			"</i></b><br><br>Mqtt status: <b><i>" + mqttStatus + "</i></b>");
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 	WebSerial.begin(&server);

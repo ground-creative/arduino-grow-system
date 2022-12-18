@@ -3,7 +3,7 @@
   Author: Ground Creative 
 */
 
-#define _VERSION_ "1.2.0"
+#define _VERSION_ "1.2.1"
 #include "airSensorsDefaultConfig.h"
 #include <NetTools.h>
 #include "SSD1306Ascii.h"
@@ -581,7 +581,21 @@ void setup()
 	delay(500); 
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
 	{
-		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+		String wifiStatus = "disconnected";
+		if (wifiConnected)
+		{
+			wifiStatus = "connected";
+		}
+		String mqttStatus = "disconnected";
+		if (mqttConnected)
+		{
+			mqttStatus = "connected";
+		}		
+		request->send(200, "text/html", "Room ID: <b><i>" + roomID + 
+			"</i></b><br><br>Component ID: <b><i>" +  componentID + 
+			"</i></b><br><br>Version: <b><i>" + String(_VERSION_) + 
+			"</i></b><br><br>WiFi status: <b><i>" + wifiStatus  + 
+			"</i></b><br><br>Mqtt status: <b><i>" + mqttStatus + "</i></b>");
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 	WebSerial.begin(&server);

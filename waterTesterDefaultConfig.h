@@ -10,8 +10,10 @@
 	#define WIFI_LED_PIN 18
 	#define MQTT_LED_PIN 19
 	
+	const int tdsFlashAddress = 8;
 	const int oledFlashAddress = 20;
 	const int updateIntervalFlashAddress = 30;
+	const int nightModeFlashAddress = 50;
 	const int waterTempSensorMaxRetries = 10;
 	unsigned long checkConnectionInterval = 5000;
 	
