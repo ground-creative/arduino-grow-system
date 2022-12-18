@@ -137,7 +137,20 @@ https://{ipaddress}/webserial
 
 ### Commands
 
-#### Air Sensors
+#### Main controller
+| ------------- | ------------- |
+| RESTART | *restart component* |
+
+#### Doser
+| ------------- | ------------- |
+| RESTART | *restart component* |
+
+#### Water tester
+| ------------- | ------------- |
+| RESTART | *restart component* |
+
+#### Air sensors
+| ------------- | ------------- |
 | RESTART | *restart component* |
 | CALIBRATESGP30 | *calibrate co2 sensor* |
 | CALIBRATEMQ135 | *calibrate co2 sensor* |
