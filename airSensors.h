@@ -3,7 +3,7 @@
   Author: Ground Creative 
 */
 
-#define _VERSION_ "1.2.1"
+#define _VERSION_ "1.2.2"
 #include "airSensorsDefaultConfig.h"
 #include <NetTools.h>
 #include "SSD1306Ascii.h"
@@ -88,97 +88,6 @@ uint32_t getAbsoluteHumidity(float temperature, float humidity)
     const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
     const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
     return absoluteHumidityScaled;
-}
-
-void recvMsg(uint8_t *data, size_t len)
-{
-	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
-	Serial.println(""); Serial.println("Received WebSerial command...");
-	String d = "";
-	String v = "";
-	for(int i=0; i < len; i++)
-	{
-		d += char(data[i]);
-	}
-	d.toUpperCase();
-	WebSerial.println(d);
-	if ( d.indexOf(':') > -1 )
-	{
-		v = d.substring((d.indexOf(':')+1),d.length());
-		d = d.substring(0,d.indexOf(':'));
-	}
-	if(d == "RESTART")
-	{
-		Serial.print("Restarting");
-		WebSerial.print("Restarting");
-		delay(3000);
-		ESP.restart();
-	}
-	else if(d == "CALIBRATESGP30")
-	{
-		Serial.println("Calibrating sgp30");
-		WebSerial.print("Calibrating sgp30");
-		EEPROM.put(addressECO2, 0); 
-		EEPROM.put(addressTVOC, 0);
-		EEPROM.commit();
-		delay(3000);
-		ESP.restart();
-	}
-	else if(d == "CALIBRATEMQ135")
-	{
-		calibrateMQ135Sensor();
-	}
-	else if(d == "UPDATEINTERVAL")
-	{
-		updateInterval = v.toInt();
-		Serial.print("Setting sensors update interval to ");	Serial.print(updateInterval);
-		WebSerial.print("Setting sensors update interval to "); WebSerial.print(String(updateInterval));
-		EEPROM.put(updateIntervalFlashAddress, updateInterval);
-		EEPROM.commit();
-	}
-	else if(d == "NIGHTMODE")
-	{
-		nightMode = v.toInt();
-		if (nightMode)
-		{
-			Serial.println("Turning on night mode");
-			WebSerial.println("Turning on night mode");
-			digitalWrite(WIFI_LED_PIN, HIGH);
-			digitalWrite(MQTT_LED_PIN, HIGH);
-		}
-		else
-		{
-			Serial.println("Turning off night mode");
-			WebSerial.println("Turning off night mode");
-			if (wifiConnected)
-			{				
-				digitalWrite(WIFI_LED_PIN, LOW);
-			}
-			if (mqttConnected)
-			{	
-				digitalWrite(MQTT_LED_PIN, LOW);
-			}
-		}
-		EEPROM.write(nightModeFlashAddress, nightMode);
-		EEPROM.commit();
-	}
-	else if(d == "OLEDON")
-	{
-		oledOn = v.toInt();
-		if (oledOn)
-		{
-			Serial.println("Turning on lcd");
-			WebSerial.println("Turning on lcd");
-		}
-		else
-		{
-			Serial.println("Turning off lcd");
-			WebSerial.println("Turning off lcd");
-			oled.clear();
-		}
-		EEPROM.write(oledFlashAddress, oledOn);
-		EEPROM.commit();
-	}
 }
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
@@ -276,6 +185,101 @@ void mqttSubscribe(const String& roomID)
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "-restart").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/calibrate-mq135").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/calibrate-sgp30").c_str()));
+}
+
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
+	Serial.println(""); Serial.println("Received WebSerial command...");
+	String d = "";
+	String v = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	d.toUpperCase();
+	WebSerial.println(d);
+	if ( d.indexOf(':') > -1 )
+	{
+		v = d.substring((d.indexOf(':')+1),d.length());
+		d = d.substring(0,d.indexOf(':'));
+	}
+	if(d == "RESTART")
+	{
+		Serial.print("Restarting");
+		WebSerial.print("Restarting");
+		delay(3000);
+		ESP.restart();
+	}
+	else if(d == "CALIBRATESGP30")
+	{
+		Serial.println("Calibrating sgp30");
+		WebSerial.print("Calibrating sgp30");
+		EEPROM.put(addressECO2, 0); 
+		EEPROM.put(addressTVOC, 0);
+		EEPROM.commit();
+		delay(3000);
+		ESP.restart();
+	}
+	else if(d == "CALIBRATEMQ135")
+	{
+		calibrateMQ135Sensor();
+	}
+	else if(d == "UPDATEINTERVAL")
+	{
+		updateInterval = v.toInt();
+		Serial.print("Setting sensors update interval to ");	Serial.print(updateInterval);
+		WebSerial.print("Setting sensors update interval to "); WebSerial.print(String(updateInterval));
+		EEPROM.put(updateIntervalFlashAddress, updateInterval);
+		EEPROM.commit();
+	}
+	else if(d == "NIGHTMODE")
+	{
+		nightMode = v.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/air-sensors-night-mode").c_str()) , "1");
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/air-sensors-night-mode").c_str()) , "0");
+		}
+		EEPROM.write(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
+	}
+	else if(d == "OLEDON")
+	{
+		oledOn = v.toInt();
+		if (oledOn)
+		{
+			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/air-sensors-oled-on").c_str()) , "1");
+		}
+		else
+		{
+			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
+			oled.clear();
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/air-sensors-oled-on").c_str()) , "0");
+		}
+		EEPROM.write(oledFlashAddress, oledOn);
+		EEPROM.commit();
+	}
 }
 
 void netClientHandler( void * pvParameters )

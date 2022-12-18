@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.0.2"
+#define _VERSION_ "1.0.3"
 #include "doserDefaultConfig.h"
 #include <NetTools.h>
 #include <Arduino.h>
@@ -35,241 +35,6 @@ int pumpFourRelayState = HIGH, pumpFiveRelayState = HIGH, pumpSixRelayState = HI
 unsigned long previousMillis = 0, displayPreviousMillis= 0; 
 unsigned long checkConnectionInterval = 5000, updateInterval = 10000;
 String wifiIP = "";
-
-void recvMsg(uint8_t *data, size_t len)
-{
-	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
-	Serial.println(""); Serial.println("Received WebSerial command...");
-	String d = "";
-	String v = "";
-	for(int i=0; i < len; i++)
-	{
-		d += char(data[i]);
-	}
-	d.toUpperCase();
-	WebSerial.println(d);
-	if ( d.indexOf(':') > -1 )
-	{
-		v = d.substring((d.indexOf(':')+1),d.length());
-		d = d.substring(0,d.indexOf(':'));
-	}
-	if(d == "RESTART")
-	{
-		Serial.print("Restarting");
-		WebSerial.print("Restarting");
-		delay(3000);
-		ESP.restart();
-	}
-	else if(d == "NIGHTMODE")
-	{
-		nightMode = v.toInt();
-		if (nightMode)
-		{
-			Serial.println("Turning on night mode");
-			WebSerial.println("Turning on night mode");
-			digitalWrite(WIFI_LED_PIN, HIGH);
-			digitalWrite(MQTT_LED_PIN, HIGH);
-		}
-		else
-		{
-			Serial.println("Turning off night mode");
-			WebSerial.println("Turning off night mode");
-			if (wifiConnected)
-			{				
-				digitalWrite(WIFI_LED_PIN, LOW);
-			}
-			if (mqttConnected)
-			{	
-				digitalWrite(MQTT_LED_PIN, LOW);
-			}
-		}
-		EEPROM.write(nightModeFlashAddress, nightMode);
-		EEPROM.commit();
-	}
-	else if(d == "OLEDON")
-	{
-		oledOn = v.toInt();
-		if (oledOn)
-		{
-			Serial.println("Turning on lcd");
-			WebSerial.println("Turning on lcd");
-		}
-		else
-		{
-			Serial.println("Turning off lcd");
-			WebSerial.println("Turning off lcd");
-			u8x8.clearDisplay();
-		}
-		EEPROM.write(oledFlashAddress, oledOn);
-		EEPROM.commit();
-	}
-	else if(d == "GETCALVALUE")
-	{
-		int pump = v.toInt();
-		if ( pump == 1 )
-		{
-			Serial.print("Calibration value pump "); Serial.print(pump); 
-			Serial.print(":	"); Serial.print(pOneCal);
-			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
-			WebSerial.print(":	"); WebSerial.print(pOneCal);
-		}
-		else if ( pump == 2 )
-		{
-			Serial.print("Calibration value pump "); Serial.print(pump); 
-			Serial.print(":	"); Serial.print(pTwoCal);
-			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
-			WebSerial.print(":	"); WebSerial.print(pTwoCal);
-		}
-		else if ( pump == 3 )
-		{
-			Serial.print("Calibration value pump "); Serial.print(pump); 
-			Serial.print(":	"); Serial.print(pThreeCal);
-			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
-			WebSerial.print(":	"); WebSerial.print(pThreeCal);
-		}
-		else if ( pump == 4 )
-		{
-			Serial.print("Calibration value pump "); Serial.print(pump); 
-			Serial.print(":	"); Serial.print(pFourCal);
-			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
-			WebSerial.print(":	"); WebSerial.print(pFourCal);
-		}
-		else if ( pump == 5 )
-		{
-			Serial.print("Calibration value pump "); Serial.print(pump); 
-			Serial.print(":	"); Serial.print(pFiveCal);
-			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
-			WebSerial.print(":	"); WebSerial.print(pFiveCal);
-		}
-		else if ( pump == 6 )
-		{
-			Serial.print("Calibration value pump "); Serial.print(pump); 
-			Serial.print(":	"); Serial.print(pSixCal);
-			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
-			WebSerial.print(":	"); WebSerial.print(pSixCal);
-		}
-	}
-	else if(d == "CALVALUEPUMP1")
-	{
-		int pump = v.toInt();
-		Serial.print("Setting calibration value for pump 1: ");  Serial.println(pump); 
-		WebSerial.print("Setting calibration value for pump 1: ");  WebSerial.println(pump); 
-		EEPROM.put(pumpOneFlashAddress, pump);
-		EEPROM.commit();
-		pumpOneCal = pump;
-	}
-	else if(d == "CALVALUEPUMP2")
-	{
-		int pump = v.toInt();
-		Serial.print("Setting calibration value for pump 2: ");  Serial.println(pump); 
-		WebSerial.print("Setting calibration value for pump 2: ");  WebSerial.println(pump); 
-		EEPROM.put(pumpTwoFlashAddress, pump);
-		EEPROM.commit();
-		pumpTwoCal = pump;
-	}
-	else if(d == "CALVALUEPUMP3")
-	{
-		int pump = v.toInt();
-		Serial.print("Setting calibration value for pump 3: ");  Serial.println(pump); 
-		WebSerial.print("Setting calibration value for pump 3: ");  WebSerial.println(pump); 
-		EEPROM.put(pumpThreeFlashAddress, pump);
-		EEPROM.commit();
-		pumpThreeCal = pump;
-	}
-	else if(d == "CALVALUEPUMP4")
-	{
-		int pump = v.toInt();
-		Serial.print("Setting calibration value for pump 4: ");  Serial.println(pump); 
-		WebSerial.print("Setting calibration value for pump 4: ");  WebSerial.println(pump); 
-		EEPROM.put(pumpFourFlashAddress, pump);
-		EEPROM.commit();
-		pumpFourCal = pump;
-	}
-	else if(d == "CALVALUEPUMP5")
-	{
-		int pump = v.toInt();
-		Serial.print("Setting calibration value for pump 5: ");  Serial.println(pump); 
-		WebSerial.print("Setting calibration value for pump 5: ");  WebSerial.println(pump); 
-		EEPROM.put(pumpFiveFlashAddress, pump);
-		EEPROM.commit();
-		pumpFiveCal = pump;
-	}
-	else if(d == "CALVALUEPUMP6")
-	{
-		int pump = v.toInt();
-		Serial.print("Setting calibration value for pump 6: ");  Serial.println(pump); 
-		WebSerial.print("Setting calibration value for pump 6: ");  WebSerial.println(pump); 
-		EEPROM.put(pumpSixFlashAddress, pump);
-		EEPROM.commit();
-		pumpSixCal = pump;		
-	}
-	else if (d == "OPENPUMP1")
-	{
-		int pump = v.toInt();
-		Serial.print("IN "); Serial.println(pump*pumpOneCal);
-		WebSerial.print("IN "); WebSerial.println(pump*pumpOneCal);
-		digitalWrite(PUMP_ONE_RELAY_PIN, LOW); // turn on
-		delay(pump*pumpOneCal);
-		digitalWrite(PUMP_ONE_RELAY_PIN, HIGH);  // turn off
-		Serial.println("OUT");
-		WebSerial.println("OUT");
-	}
-	else if (d == "OPENPUMP2")
-	{
-		int pump = v.toInt();
-		Serial.print("IN "); Serial.println(pump*pumpTwoCal);
-		WebSerial.print("IN "); WebSerial.println(pump*pumpTwoCal);
-		digitalWrite(PUMP_TWO_RELAY_PIN, LOW); // turn on
-		delay(pump*pumpTwoCal);
-		digitalWrite(PUMP_TWO_RELAY_PIN, HIGH);  // turn off
-		Serial.println("OUT");
-		WebSerial.println("OUT");
-	}
-	else if (d == "OPENPUMP3")
-	{
-		int pump = v.toInt();
-		Serial.print("IN "); Serial.println(pump*pumpThreeCal);
-		WebSerial.print("IN "); WebSerial.println(pump*pumpThreeCal);
-		digitalWrite(PUMP_THREE_RELAY_PIN, LOW); // turn on
-		delay(pump*pumpThreeCal);
-		digitalWrite(PUMP_THREE_RELAY_PIN, HIGH);  // turn off
-		Serial.println("OUT");
-		WebSerial.println("OUT");
-	}
-	else if (d == "OPENPUMP4")
-	{
-		int pump = v.toInt();
-		Serial.print("IN "); Serial.println(pump*pumpFourCal);
-		WebSerial.print("IN "); WebSerial.println(pump*pumpFourCal);
-		digitalWrite(PUMP_FOUR_RELAY_PIN, LOW); // turn on
-		delay(pump*pumpFourCal);
-		digitalWrite(PUMP_FOUR_RELAY_PIN, HIGH);  // turn off
-		Serial.println("OUT");
-		WebSerial.println("OUT");
-	}
-	else if (d == "OPENPUMP5")
-	{
-		int pump = v.toInt();
-		Serial.print("IN "); Serial.println(pump*pumpFiveCal);
-		WebSerial.print("IN "); WebSerial.println(pump*pumpFiveCal);
-		digitalWrite(PUMP_FIVE_RELAY_PIN, LOW); // turn on
-		delay(pump*pumpFiveCal);
-		digitalWrite(PUMP_FIVE_RELAY_PIN, HIGH);  // turn off
-		Serial.println("OUT");
-		WebSerial.println("OUT");
-	}
-	else if (d == "OPENPUMP6")
-	{
-		int pump = v.toInt();
-		Serial.print("IN "); Serial.println(pump*pumpSixCal);
-		WebSerial.print("IN "); WebSerial.println(pump*pumpSixCal);
-		digitalWrite(PUMP_SIX_RELAY_PIN, LOW); // turn on
-		delay(pump*pumpSixCal);
-		digitalWrite(PUMP_SIX_RELAY_PIN, HIGH);  // turn off
-		Serial.println("OUT");
-		WebSerial.println("OUT");
-	}
-}
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
 {  
@@ -443,6 +208,245 @@ void mqttSubscribe(const String& roomID)
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-four-calibrate").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-five-calibrate").c_str()));
 	mqtt.subscribe(const_cast<char*>(String(roomID + "/" + componentID + "/p-six-calibrate").c_str()));
+}
+
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
+	Serial.println(""); Serial.println("Received WebSerial command...");
+	String d = "";
+	String v = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	d.toUpperCase();
+	WebSerial.println(d);
+	if ( d.indexOf(':') > -1 )
+	{
+		v = d.substring((d.indexOf(':')+1),d.length());
+		d = d.substring(0,d.indexOf(':'));
+	}
+	if(d == "RESTART")
+	{
+		Serial.print("Restarting");
+		WebSerial.print("Restarting");
+		delay(3000);
+		ESP.restart();
+	}
+	else if(d == "NIGHTMODE")
+	{
+		nightMode = v.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/" + componentID + "-night-mode").c_str()), "1");
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/" + componentID + "-night-mode").c_str()), "0");
+		}
+		EEPROM.write(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
+	}
+	else if(d == "OLEDON")
+	{
+		oledOn = v.toInt();
+		if (oledOn)
+		{
+			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/" + componentID + "-oled-on").c_str()), "1");
+		}
+		else
+		{
+			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
+			u8x8.clearDisplay();
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/" + componentID + "-oled-on").c_str()), "0");
+		}
+		EEPROM.write(oledFlashAddress, oledOn);
+		EEPROM.commit();
+	}
+	else if(d == "GETCALVALUE")
+	{
+		int pump = v.toInt();
+		if ( pump == 1 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pOneCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pOneCal);
+		}
+		else if ( pump == 2 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pTwoCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pTwoCal);
+		}
+		else if ( pump == 3 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pThreeCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pThreeCal);
+		}
+		else if ( pump == 4 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pFourCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pFourCal);
+		}
+		else if ( pump == 5 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pFiveCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pFiveCal);
+		}
+		else if ( pump == 6 )
+		{
+			Serial.print("Calibration value pump "); Serial.print(pump); 
+			Serial.print(":	"); Serial.print(pSixCal);
+			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
+			WebSerial.print(":	"); WebSerial.print(pSixCal);
+		}
+	}
+	else if(d == "CALVALUEPUMP1")
+	{
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 1: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 1: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpOneFlashAddress, pump);
+		EEPROM.commit();
+		pumpOneCal = pump;
+	}
+	else if(d == "CALVALUEPUMP2")
+	{
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 2: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 2: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpTwoFlashAddress, pump);
+		EEPROM.commit();
+		pumpTwoCal = pump;
+	}
+	else if(d == "CALVALUEPUMP3")
+	{
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 3: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 3: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpThreeFlashAddress, pump);
+		EEPROM.commit();
+		pumpThreeCal = pump;
+	}
+	else if(d == "CALVALUEPUMP4")
+	{
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 4: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 4: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpFourFlashAddress, pump);
+		EEPROM.commit();
+		pumpFourCal = pump;
+	}
+	else if(d == "CALVALUEPUMP5")
+	{
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 5: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 5: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpFiveFlashAddress, pump);
+		EEPROM.commit();
+		pumpFiveCal = pump;
+	}
+	else if(d == "CALVALUEPUMP6")
+	{
+		int pump = v.toInt();
+		Serial.print("Setting calibration value for pump 6: ");  Serial.println(pump); 
+		WebSerial.print("Setting calibration value for pump 6: ");  WebSerial.println(pump); 
+		EEPROM.put(pumpSixFlashAddress, pump);
+		EEPROM.commit();
+		pumpSixCal = pump;		
+	}
+	else if (d == "OPENPUMP1")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpOneCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpOneCal);
+		digitalWrite(PUMP_ONE_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpOneCal);
+		digitalWrite(PUMP_ONE_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP2")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpTwoCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpTwoCal);
+		digitalWrite(PUMP_TWO_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpTwoCal);
+		digitalWrite(PUMP_TWO_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP3")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpThreeCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpThreeCal);
+		digitalWrite(PUMP_THREE_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpThreeCal);
+		digitalWrite(PUMP_THREE_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP4")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpFourCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpFourCal);
+		digitalWrite(PUMP_FOUR_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpFourCal);
+		digitalWrite(PUMP_FOUR_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP5")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpFiveCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpFiveCal);
+		digitalWrite(PUMP_FIVE_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpFiveCal);
+		digitalWrite(PUMP_FIVE_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
+	else if (d == "OPENPUMP6")
+	{
+		int pump = v.toInt();
+		Serial.print("IN "); Serial.println(pump*pumpSixCal);
+		WebSerial.print("IN "); WebSerial.println(pump*pumpSixCal);
+		digitalWrite(PUMP_SIX_RELAY_PIN, LOW); // turn on
+		delay(pump*pumpSixCal);
+		digitalWrite(PUMP_SIX_RELAY_PIN, HIGH);  // turn off
+		Serial.println("OUT");
+		WebSerial.println("OUT");
+	}
 }
 
 int changeRelayStateManually(int buttonPin, int relayPin, int &relayState)
@@ -629,7 +633,21 @@ void setup()
 	delay(500); 
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
 	{
-		request->send(200, "text/plain", roomID + ":" + componentID + " " + " v" + String(_VERSION_) );
+		String wifiStatus = "disconnected";
+		if (wifiConnected)
+		{
+			wifiStatus = "connected";
+		}
+		String mqttStatus = "disconnected";
+		if (mqttConnected)
+		{
+			mqttStatus = "connected";
+		}		
+		request->send(200, "text/html", "Room ID: <b><i>" + roomID + 
+			"</i></b><br><br>Component ID: <b><i>" +  componentID + 
+			"</i></b><br><br>Version: <b><i>" + String(_VERSION_) + 
+			"</i></b><br><br>WiFi status: <b><i>" + wifiStatus  + 
+			"</i></b><br><br>Mqtt status: <b><i>" + mqttStatus + "</i></b>");
 	} );
 	AsyncElegantOTA.begin(&server);    // Start ElegantOTA
 	WebSerial.begin(&server);

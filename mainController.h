@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.5.2"
+#define _VERSION_ "1.5.4"
 #include "mainControllerDefaultConfig.h"
 #include <NetTools.h>
 #include <Preferences.h>
@@ -216,8 +216,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		{
 			Serial.println("Turning on night mode");
 			WebSerial.println("Turning on night mode");
-			digitalWrite(WIFI_LED_PIN, HIGH);
-			digitalWrite(MQTT_LED_PIN, HIGH);
+			digitalWrite(WIFI_LED_PIN, LOW);
+			digitalWrite(MQTT_LED_PIN, LOW);
 		}
 		else
 		{
@@ -225,11 +225,11 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 			WebSerial.println("Turning off night mode");
 			if (wifiConnected)
 			{				
-				digitalWrite(WIFI_LED_PIN, LOW);
+				digitalWrite(WIFI_LED_PIN, HIGH);
 			}
 			if (mqttConnected)
 			{	
-				digitalWrite(MQTT_LED_PIN, LOW);
+				digitalWrite(MQTT_LED_PIN, HIGH);
 			}
 		}
 		preferences.putInt("nightmode", nightMode);
@@ -280,6 +280,7 @@ void recvMsg(uint8_t *data, size_t len)
 			WebSerial.println("Turning on night mode");
 			digitalWrite(WIFI_LED_PIN, HIGH);
 			digitalWrite(MQTT_LED_PIN, HIGH);
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/main-controller-night-mode").c_str()) , "1");
 		}
 		else
 		{
@@ -293,6 +294,7 @@ void recvMsg(uint8_t *data, size_t len)
 			{	
 				digitalWrite(MQTT_LED_PIN, LOW);
 			}
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/main-controller-night-mode").c_str()) , "0");
 		}
 		preferences.putInt("nightmode", nightMode);
 	}
@@ -304,12 +306,14 @@ void recvMsg(uint8_t *data, size_t len)
 			Serial.println("Turning on lcd");
 			WebSerial.println("Turning on lcd");
 			lcd.backlight();
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/main-controller-oled-on").c_str()) , "1");
 		}
 		else
 		{
 			Serial.println("Turning off lcd");
 			WebSerial.println("Turning off lcd");
 			lcd.noBacklight();
+			mqtt.publish(const_cast<char*>(String("m/" + roomID + "/main-controller-oled-on").c_str()) , "0");
 		}
 		preferences.putInt("backlight-on", backlightOn);
 	}
