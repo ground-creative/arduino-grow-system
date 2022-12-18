@@ -138,9 +138,9 @@ https://{ipaddress}/webserial
 | Component | Command  | Explanation |
 | ------------- | ------------- | ------------- |
 | air sensor | RESTART | *restart component* |
-| air sensor | CALIBRATESGP30 | *calibrate co2 sensor* |
-| air sensor | CALIBRATEMQ135 | *calibrate co2 sensor* |
-| air sensor | NIGHTMODE:(1|0) | *turn on/off night mode* |
+|  | CALIBRATESGP30 | *calibrate co2 sensor* |
+|  | CALIBRATEMQ135 | *calibrate co2 sensor* |
+|  | NIGHTMODE:(1|0) | *turn on/off night mode* |
 | air sensor | OLEDON:(1|0) | *turn on/off oled display* |
 | air sensor | UPDATEINTERVAL:{value} | *update sensors interval* |
 | main controller | RESTART | *restart component* |
