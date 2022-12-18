@@ -3,7 +3,7 @@
 	Author: Ground Creative 
 */
 
-#define _VERSION_ "1.2.1"
+#define _VERSION_ "1.2.2"
 #include "waterTesterDefaultConfig.h"
 #include <NetTools.h>
 #include <OneWire.h>
@@ -253,7 +253,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 		EEPROM.put(updateIntervalFlashAddress, updateInterval);
 		EEPROM.commit();
 	}
-	else if (String(topic) == roomID + "/main-controller-night-mode")
+	else if (String(topic) == roomID + "/water-tester-night-mode")
 	{
 		nightMode = content.toInt();
 		if (nightMode)
@@ -276,7 +276,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 				digitalWrite(MQTT_LED_PIN, LOW);
 			}
 		}
-		preferences.putInt("nightmode", nightMode);
+		EEPROM.put(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
 	}
 }
 

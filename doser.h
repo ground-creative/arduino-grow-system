@@ -144,9 +144,9 @@ void recvMsg(uint8_t *data, size_t len)
 		else if ( pump == 6 )
 		{
 			Serial.print("Calibration value pump "); Serial.print(pump); 
-			Serial.print(":	"); Serial.print(pFiveCal);
+			Serial.print(":	"); Serial.print(pSixCal);
 			WebSerial.print("Calibration value pump "); WebSerial.print(pump);
-			WebSerial.print(":	"); WebSerial.print(pFiveCal);
+			WebSerial.print(":	"); WebSerial.print(pSixCal);
 		}
 	}
 	else if(d == "CALVALUEPUMP1")
