@@ -44,46 +44,6 @@ unsigned int outTempSensorCountRetries = 0,restoredECO2Baseline = 0,restoredTVOC
 bool wifiConnected = false, mqttConnected = false, oledOn = true, nightMode = false;
 String wifiIP = "";
 
-uint32_t getAbsoluteHumidity(float temperature, float humidity) 
-{
-    // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
-    const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
-    const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
-    return absoluteHumidityScaled;
-}
-
-void recvMsg(uint8_t *data, size_t len)
-{
-	WebSerial.println("");
-	WebSerial.println("Received data...");
-	Serial.println("");
-	Serial.println("Received WebSerial data...");
-	String d = "";
-	for(int i=0; i < len; i++)
-	{
-		d += char(data[i]);
-	}
-	WebSerial.println(d);
-	if(d == "restart" || d == "RESTART")
-	{
-		Serial.print("Restarting");
-		WebSerial.print("Restarting");
-		delay(1000);
-		ESP.restart();
-	}
-	if(d == "calibratesgp30" || d == "CALIBRATESGP30")
-	{
-		Serial.println("Calibrating sgp30");
-		WebSerial.print("Calibrating sgp30");
-		EEPROM.put(addressECO2, 0); 
-		EEPROM.put(addressTVOC, 0);
-		EEPROM.commit();
-		delay(1000);
-		ESP.restart();
-	}
-	Serial.println(d.indexOf(':'));
-}
-
 void calibrateMQ135Sensor()
 {
 	/*****************************  MQ Calibration ********************************************/ 
@@ -96,7 +56,7 @@ void calibrateMQ135Sensor()
 	Serial.print("Calibrating please wait.");
 	WebSerial.print("Calibrating please wait.");
 	float calcR0 = 0;
-	for(int i = 1; i<=10; i ++)
+	for (int i = 1; i<=10; i ++)
 	{
 		MQ135.update(); // Update data, the arduino will read the voltage from the analog pin
 		calcR0 += MQ135.calibrate(RATIO_MQ135_CLEAN_AIR);
@@ -122,15 +82,109 @@ void calibrateMQ135Sensor()
 	delay(1000);
 }
 
+uint32_t getAbsoluteHumidity(float temperature, float humidity) 
+{
+    // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
+    const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
+    const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
+    return absoluteHumidityScaled;
+}
+
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println(""); WebSerial.println("Received WebSerial command...");
+	Serial.println(""); Serial.println("Received WebSerial command...");
+	String d = "";
+	String v = "";
+	for(int i=0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	d.toUpperCase();
+	WebSerial.println(d);
+	if ( d.indexOf(':') > -1 )
+	{
+		v = d.substring((d.indexOf(':')+1),d.length());
+		d = d.substring(0,d.indexOf(':'));
+	}
+	if(d == "RESTART")
+	{
+		Serial.print("Restarting");
+		WebSerial.print("Restarting");
+		delay(3000);
+		ESP.restart();
+	}
+	else if(d == "CALIBRATESGP30")
+	{
+		Serial.println("Calibrating sgp30");
+		WebSerial.print("Calibrating sgp30");
+		EEPROM.put(addressECO2, 0); 
+		EEPROM.put(addressTVOC, 0);
+		EEPROM.commit();
+		delay(3000);
+		ESP.restart();
+	}
+	else if(d == "CALIBRATEMQ135")
+	{
+		calibrateMQ135Sensor();
+	}
+	else if(d == "UPDATEINTERVAL")
+	{
+		updateInterval = v.toInt();
+		Serial.print("Setting sensors update interval to ");	Serial.print(updateInterval);
+		WebSerial.print("Setting sensors update interval to "); WebSerial.print(String(updateInterval));
+		EEPROM.put(updateIntervalFlashAddress, updateInterval);
+		EEPROM.commit();
+	}
+	else if(d == "NIGHTMODE")
+	{
+		nightMode = v.toInt();
+		if (nightMode)
+		{
+			Serial.println("Turning on night mode");
+			WebSerial.println("Turning on night mode");
+			digitalWrite(WIFI_LED_PIN, HIGH);
+			digitalWrite(MQTT_LED_PIN, HIGH);
+		}
+		else
+		{
+			Serial.println("Turning off night mode");
+			WebSerial.println("Turning off night mode");
+			if (wifiConnected)
+			{				
+				digitalWrite(WIFI_LED_PIN, LOW);
+			}
+			if (mqttConnected)
+			{	
+				digitalWrite(MQTT_LED_PIN, LOW);
+			}
+		}
+		EEPROM.write(nightModeFlashAddress, nightMode);
+		EEPROM.commit();
+	}
+	else if(d == "OLEDON")
+	{
+		oledOn = v.toInt();
+		if (oledOn)
+		{
+			Serial.println("Turning on lcd");
+			WebSerial.println("Turning on lcd");
+		}
+		else
+		{
+			Serial.println("Turning off lcd");
+			WebSerial.println("Turning off lcd");
+			oled.clear();
+		}
+		EEPROM.write(oledFlashAddress, oledOn);
+		EEPROM.commit();
+	}
+}
+
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
 {  
-	Serial.println("");
-	Serial.print("Message arrived [");
-	Serial.print(topic);
-	Serial.print("] ");
-	WebSerial.print("Message arrived [");
-	WebSerial.print(topic);
-	WebSerial.print("] ");
+	Serial.println(""); Serial.print("Message arrived ["); Serial.print(topic); Serial.print("] ");
+	WebSerial.print("Message arrived ["); WebSerial.print(topic); WebSerial.print("] ");
 	String content = "";
 	for (int i = 0; i < length; i++) 
 	{
@@ -189,10 +243,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 	else if (String(topic) == roomID + "/air-sensors-display-update-interval")
 	{
 		updateInterval = content.toInt();
-		Serial.print("Setting sensors update interval to ");
-		Serial.print(updateInterval);
-		WebSerial.print("Setting sensors update interval to ");
-		WebSerial.print(String(updateInterval));
+		Serial.print("Setting sensors update interval to "); Serial.print(updateInterval);
+		WebSerial.print("Setting sensors update interval to "); WebSerial.print(String(updateInterval));
 		EEPROM.put(updateIntervalFlashAddress, updateInterval);
 		EEPROM.commit();
 	}
@@ -228,8 +280,7 @@ void mqttSubscribe(const String& roomID)
 
 void netClientHandler( void * pvParameters )
 {
-	Serial.print("netClientHandler running on core ");
-	Serial.println(xPortGetCoreID());
+	Serial.print("netClientHandler running on core "); Serial.println(xPortGetCoreID());
 	for (;;)
 	{
 		unsigned long currentMillis = millis();
@@ -310,9 +361,7 @@ void updateCo2Values()
 		MQ135.setB(-2.862); 			// Configure the equation to calculate CO2 concentration value
 		float CO2 = MQ135.readSensor(); // Sensor will read PPM concentration using the model, a and b values set previously or from the setup
 		inCo2 = CO2 + co2BaseValue;
-		Serial.print("MQ135 CO2: ");
-		Serial.print(inCo2);
-		Serial.println();
+		Serial.print("MQ135 CO2: "); Serial.print(inCo2); Serial.println();
 		WebSerial.print("MQ135 CO2: "); WebSerial.print(inCo2); WebSerial.println();
 	}
 	if (USE_SGP30)
@@ -431,12 +480,8 @@ void updateOutTemp()
 		WebSerial.print(" times");
 		WebSerial.println();
 	}
-	Serial.print("DS18B20 Temp: ");
-	Serial.print(outTemp);
-	Serial.println();
-	WebSerial.print("DS18B20 Temp: ");
-	WebSerial.print(outTemp);
-	WebSerial.println();
+	Serial.print("DS18B20 Temp: "); Serial.print(outTemp); Serial.println();
+	WebSerial.print("DS18B20 Temp: "); WebSerial.print(outTemp); WebSerial.println();
 }
 
 void updateInTempAndHum()
@@ -451,12 +496,8 @@ void updateInTempAndHum()
 	else
 	{
 		inTemp = inTempMem;
-		Serial.print("DH22 Temp: ");
-		Serial.print(inTemp);
-		Serial.println();
-		WebSerial.print("DH22 Temp: ");
-		WebSerial.print(inTemp);
-		WebSerial.println();
+		Serial.print("DH22 Temp: "); Serial.print(inTemp); Serial.println();
+		WebSerial.print("DH22 Temp: "); WebSerial.print(inTemp); WebSerial.println();
 	}
 	float inHumMem = dht.readHumidity();
 	if ( isnan(inHumMem) ) 
@@ -467,12 +508,8 @@ void updateInTempAndHum()
 	else
 	{
 		inHum = inHumMem;
-		Serial.print("DH22 Humidity: ");
-		Serial.print(inHum);
-		Serial.println();
-		WebSerial.print("DH22 Humidity: ");
-		WebSerial.print(inHum);
-		WebSerial.println();
+		Serial.print("DH22 Humidity: "); Serial.print(inHum); Serial.println();
+		WebSerial.print("DH22 Humidity: "); WebSerial.print(inHum); WebSerial.println();
 	}
 }
 

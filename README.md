@@ -81,6 +81,9 @@ mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester|doser-one
 // Component screen backlight on/off
 mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester)-display-backlight" -m "1|0" -u "user" -P "pass"
 
+// Night mode on/off (turns on/off notification led lights)
+mosquitto_pub -t "{systemID}/(air-sensors|main-controller|water-tester|doser-one)-night-mode" -m "1|0" -u "user" -P "pass"
+
 // Device network status
 mosquitto_sub -t "device-status/{systemID}-(air-sensors|main-controller|water-tester|doser-one|doser-two)" -u "user" -P "pass"
 
@@ -89,6 +92,9 @@ mosquitto_pub -t "{systemID}/{main-controller|water-tester|air-sensors}-display-
 
 // Calibrate mq-135 sensor
 mosquitto_pub -t "{systemID}/air-sensors/calibrate-mq135" -m "1" -u "user" -P "pass"
+
+// Calibrate sgp30 sensor
+mosquitto_pub -t "{systemID}/air-sensors/calibrate-sgp30" -m "1" -u "user" -P "pass"
 
 // Main controller relay channel 1
 mosquitto_pub -t "{systemID}/water-valve" -m "{1|0}" -u "user" -P "pass"
@@ -131,11 +137,15 @@ https://{ipaddress}/webserial
 
 | Component | Command  | Explanation |
 | ------------- | ------------- | ------------- |
-| air sensor | restart | *restart component* |
-| air sensor | calibratesgp30 | *calibrate co2 sensor* |
-| main controller | restart | *restart component* |
-| water tester | restart | *restart component* |
-| doser one | restart | *restart component* |
+| air sensor | RESTART | *restart component* |
+| air sensor | CALIBRATESGP30 | *calibrate co2 sensor* |
+| air sensor | CALIBRATEMQ135 | *calibrate co2 sensor* |
+| air sensor | NIGHTMODE:(1|0) | *turn on/off night mode* |
+| air sensor | OLEDON:(1|0) | *turn on/off oled display* |
+| air sensor | UPDATEINTERVAL:{value} | *update sensors interval* |
+| main controller | RESTART | *restart component* |
+| water tester | RESTART | *restart component* |
+| doser one | RESTART | *restart component* |
 
 
 ## Components list
