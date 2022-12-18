@@ -127,11 +127,13 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)-calibrate" -m "{value}" -u "user" -P "pass"
 ```
 
-## Upload firmware
+## Upload firmware address
 
 https://{ipaddress}/update
 
 ## Web serial
+
+### Address
 
 https://{ipaddress}/webserial
 
@@ -139,18 +141,22 @@ https://{ipaddress}/webserial
 
 #### Main controller
 | Command  | Explanation |
+| ------------- | ------------- |
 | RESTART | *restart component* |
 
 #### Doser
 | Command  | Explanation |
+| ------------- | ------------- |
 | RESTART | *restart component* |
 
 #### Water tester
 | Command  | Explanation |
+| ------------- | ------------- |
 | RESTART | *restart component* |
 
 #### Air sensors
 | Command  | Explanation |
+| ------------- | ------------- |
 | RESTART | *restart component* |
 | CALIBRATESGP30 | *calibrate co2 sensor* |
 | CALIBRATEMQ135 | *calibrate co2 sensor* |
