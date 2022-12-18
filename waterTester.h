@@ -476,10 +476,10 @@ void updateTemp()
 void publishValues()
 {
 	StaticJsonDocument<256> doc;
-	doc["ppm"] = String( tdsValue, 0 );
-	doc["ph"] = String( phValue, 2 );
-	doc["ec"] = String( ecValue, 1 );
-	doc["water_temp"] = String( waterTemp, 1);
+	doc["ppm"] = String(tdsValue, 0);
+	doc["ph"] = String(phValue, 2);
+	doc["ec"] = String(ecValue, 1);
+	doc["water_temp"] = String(waterTemp, 1);
 	doc["sal"] = salValue;
 	char buffer[256];
 	serializeJson(doc, buffer);
@@ -542,12 +542,12 @@ void setup()
 	xTaskCreatePinnedToCore
 	(
 		netClientHandler,     /* Task function. */
-		"netClient",          /* name of task. */
-		10000,                /* Stack size of task */
-		NULL,                 /* parameter of the task */
-		1,                      /* priority of the task */
-		&netClient,         /* Task handle to keep track of created task */
-		0                     /* pin task to core 0 */   
+		"netClient",          	/* name of task. */
+		10000,                	/* Stack size of task */
+		NULL,                 	/* parameter of the task */
+		1,                      	/* priority of the task */
+		&netClient,         	/* Task handle to keep track of created task */
+		0                     		/* pin task to core 0 */   
 	);                        
 	delay(500); 
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) 
