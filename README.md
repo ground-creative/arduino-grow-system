@@ -127,26 +127,26 @@ mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p
 mosquitto_pub -t "{systemID}/(doser-one|doser-two)/(p-one|p-two|p-three|p-four|p-five|p-six)-calibrate" -m "{value}" -u "user" -P "pass"
 ```
 
-### Upload firmware
+## Upload firmware
 
 https://{ipaddress}/update
 
-### Web serial
+## Web serial
 
 https://{ipaddress}/webserial
 
-| Component | Command  | Explanation |
-| ------------- | ------------- | ------------- |
-| air sensors | RESTART | *restart component* |
-| // | CALIBRATESGP30 | *calibrate co2 sensor* |
-| // | CALIBRATEMQ135 | *calibrate co2 sensor* |
-| // | NIGHTMODE:(1\|0) | *turn on/off night mode* |
-| // | OLEDON:(1\|0) | *turn on/off oled display* |
-| // | UPDATEINTERVAL:{value} | *update sensors interval* |
-| main controller | RESTART | *restart component* |
-| water tester | RESTART | *restart component* |
-| doser one | RESTART | *restart component* |
+### Commands
 
+#### Air Sensors
+
+| Command  | Explanation |
+| ------------- | ------------- |
+| RESTART | *restart component* |
+| CALIBRATESGP30 | *calibrate co2 sensor* |
+| CALIBRATEMQ135 | *calibrate co2 sensor* |
+| NIGHTMODE:(1\|0) | *turn on/off night mode* |
+| OLEDON:(1\|0) | *turn on/off oled display* |
+| UPDATEINTERVAL:{value} | *update sensors interval* |
 
 ## Components list
 
